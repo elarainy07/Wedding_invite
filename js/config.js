@@ -66,6 +66,7 @@ window.WEDDING_CONFIG = {
             name: "entry.1111111111",
             email: "entry.2222222222",
             attending: "entry.3333333333",
+            flightHelp: "entry.4444444444",
             message: "entry.6666666666",
         },
     },

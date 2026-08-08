@@ -639,6 +639,8 @@ img { max-width:100%; display:block; }
     line-height:1.6;
 }
 .rsvp__note strong { color:var(--ink); }
+.form__hint { margin-top:8px; font-size:.8rem; color:var(--muted); font-style:italic; line-height:1.5; }
+.form__hint a { color:var(--rose-dark); font-weight:600; font-style:normal; text-decoration:underline; }
 .form__status { text-align:center; margin-top:18px; font-size:.92rem; min-height:1.2em; font-weight:500; }
 .form__status.success { color:#2e7d32; }
 .form__status.error   { color:#c0392b; }
