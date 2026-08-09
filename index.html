@@ -14,11 +14,18 @@
 
 <!-- PASSWORD GATE -->
 <div class="pw-gate" id="pwGate" role="dialog" aria-modal="true" aria-label="Invitation password required">
+    <!-- BACKGROUND PHOTO PLACEHOLDER: Replace div.pw-gate__bg-placeholder with <img src="img/your-photo.jpg" alt="" class="pw-gate__bg-photo"> -->
+    <div class="pw-gate__bg" aria-hidden="true">
+        <div class="pw-gate__bg-placeholder">
+            <span></span>
+            <p>Background Photo</p>
+        </div>
+    </div>
+    <div class="pw-gate__overlay" aria-hidden="true"></div>
     <div class="pw-gate__stars" aria-hidden="true"></div>
     <div class="pw-gate__card">
         <img src="wedding_logo_transparent.png" alt="Jude &amp; Nica" class="pw-gate__logo">
-        <h1 class="pw-gate__names">Jude &amp; Nica</h1>
-        <p class="pw-gate__label">Enter your invitation password to continue</p>
+        <p class="pw-gate__label">Enter your wedding invitation password to continue</p>
         <form class="pw-gate__form" id="pwForm" novalidate>
             <input
                 type="password"
@@ -61,6 +68,7 @@
         <li><a href="#entourage">Entourage</a></li>
         <li><a href="#reminders">Reminders</a></li>
         <li><a href="#rsvp">RSVP</a></li>
+        <li><a href="#messages">Messages</a></li>
     </ul>
 </nav>
 
@@ -187,14 +195,14 @@
     <div class="section__head reveal">
         <p class="section__eyebrow">Come celebrate with us <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-leaf"></use></svg></p>
         <h2 class="section__title">The Venues</h2>
-        <p class="venue__location-note">Both venues are in the same Tagaytay area &middot; <strong>Free shuttle</strong> between ceremony &amp; reception</p>
+        <p class="venue__location-note">Both venues are in the same area &middot; <strong>Free shuttle</strong> between ceremony &amp; reception</p>
     </div>
     <div class="venue__grid">
 
         <!-- Ceremony -->
         <div class="venue__card reveal">
             <div class="venue__img">
-                <div class="img-placeholder img-placeholder--venue"><span>&#128248;</span><p>Ceremony Venue Photo</p></div>
+                <img src="Pictures/san_antonio_de_padua_chapel.jpg" alt="San Antonio de Padua Chapel" class="venue__photo">
             </div>
             <div class="venue__body">
                 <div class="venue__badge venue__badge--ceremony">Ceremony</div>
@@ -208,7 +216,7 @@
         <!-- Reception -->
         <div class="venue__card reveal">
             <div class="venue__img">
-                <div class="img-placeholder img-placeholder--venue"><span>&#128248;</span><p>Reception Venue Photo</p></div>
+                <img src="Pictures/alta_D_tagaytay.jpg" alt="Alta D&#8217; Tagaytay" class="venue__photo">
             </div>
             <div class="venue__body">
                 <div class="venue__badge venue__badge--reception">Reception</div>
@@ -234,18 +242,13 @@
     </div>
     <div class="attire__wrap reveal">
         <div class="attire__img">
-            <!-- ATTIRE GUIDE PLACEHOLDER: Replace with <img src="img/attire-guide.jpg" alt="Attire Guide" class="attire__guide-img"> -->
-            <div class="img-placeholder img-placeholder--attire">
-                <span>&#128248;</span>
-                <p>Attire Guide Placeholder</p>
-                <small>Your colour palette &amp; style guide will go here</small>
-            </div>
+            <img src="Pictures/dress_code.jpeg" alt="Attire Guide" class="attire__guide-img">
         </div>
         <div class="attire__body">
             <h3>Dress Code</h3>
-            <p>We&#8217;d love for our guests to complement the elegance and whimsy of our special day. Our full attire guide with colour palette and style suggestions will be uploaded soon!</p>
+            <p>We&#8217;d love for our guests to dress in <strong>semi-formal attire</strong> and follow our wedding colour palette: <strong>blue, yellow, pink, green, orange, and purple</strong> in soft, elegant tones.</p>
+            <p>The attire guide is for inspiration only, so feel free to wear what makes you feel comfortable and confident while celebrating with us.</p>
             <p class="attire__note"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-medal"></use></svg> Get a chance to be awarded as the <strong>Best Dressed Guest</strong> of the evening! Dress to impress and let your style shine.</p>
-            <p class="attire__note"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-sparkle"></use></svg> Think soft, romantic, and dreamy &#8212; pastel and semi-formal tones are warmly encouraged!</p>
         </div>
     </div>
 </section>
@@ -277,11 +280,11 @@
         </div>
 
         <div class="program__item reveal">
-            <div class="program__dot" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-wine"></use></svg></div>
+            <div class="program__dot" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-gift"></use></svg></div>
             <div class="program__body">
                 <span class="program__time">4:30 PM</span>
                 <h3>Cocktail Hour</h3>
-                <p>Celebrate with cocktails, wine, and light bites while the newlyweds steal a magical moment away. Enjoy, mingle, and soak in the Tagaytay breeze!</p>
+                <p>While we sneak off for photos with the entourage, enjoy our charcuterie &amp; slider grazing table, Filipino street food, and a coffee station. There's a fun activity too, so be sure to join! Enjoy, mingle, and soak in the Tagaytay breeze!</p>
             </div>
         </div>
 
@@ -308,7 +311,7 @@
             <div class="program__body">
                 <span class="program__time">11:00 PM</span>
                 <h3>End of Celebration</h3>
-                <p>Thank you for being part of our magical night. Safe travels home &#8212; and thank you for the memories! <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-moon"></use></svg> <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-sparkle"></use></svg></p>
+                <p>Thank you for celebrating with us tonight &#8212; it truly meant the world to us. Safe travels home!</p>
             </div>
         </div>
 
@@ -417,13 +420,25 @@
             <p class="form__hint">Coming from abroad for the big day? Jude&#8217;s a total pro at hunting down cheap flights &mdash; happy to help you find a good deal! Just message Jude directly on <a href="https://m.me/judeaeddrian" target="_blank" rel="noopener">Facebook Messenger</a> and he&#8217;ll help you out.</p>
         </div>
         <div class="form__group">
-            <label for="message">A note for the couple <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-hearts"></use></svg></label>
+            <label for="message">Message to the Couple <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-hearts"></use></svg></label>
             <textarea id="message" name="message" rows="4" placeholder="Share your wishes and love for Jude &amp; Nica&hellip;"></textarea>
         </div>
         <button type="submit" class="btn btn--dark btn--full" id="rsvpSubmit">Send RSVP <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-envelope"></use></svg></button>
         <p class="rsvp__note"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-warning"></use></svg> Please note that failure to respond by the deadline will be considered as <strong>not attending</strong>, and your reserved seat will be offered to another guest. We appreciate your prompt response!</p>
         <p class="form__status" id="formStatus" role="status" aria-live="polite"></p>
     </form>
+</section>
+
+<!-- MESSAGES FOR THE COUPLE -->
+<section class="section messages" id="messages">
+    <div class="section__head reveal">
+        <p class="section__eyebrow">Notes full of love <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-hearts"></use></svg></p>
+        <h2 class="section__title">Messages for the Couple</h2>
+        <p class="section__sub">Heartfelt wishes from our guests &#8212; every note left in the RSVP form appears here!</p>
+    </div>
+    <div class="messages__wall reveal" id="messagesWall">
+        <p class="messages__empty" id="messagesEmpty">Be the first to leave a sweet note for Jude &amp; Nica <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-blossom"></use></svg></p>
+    </div>
 </section>
 
 <!-- FOOTER -->

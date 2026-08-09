@@ -474,12 +474,12 @@ img { max-width:100%; display:block; }
     font-size:1.6rem; box-shadow:var(--shadow-card); z-index:1; flex-shrink:0;
 }
 /* Rainbow dot borders */
-.program__item:nth-child(1) .program__dot { border:2px solid var(--c-pink);   }
-.program__item:nth-child(2) .program__dot { border:2px solid var(--c-violet);  }
-.program__item:nth-child(3) .program__dot { border:2px solid var(--c-blue);    }
-.program__item:nth-child(4) .program__dot { border:2px solid var(--c-orange);  }
-.program__item:nth-child(5) .program__dot { border:2px solid var(--c-green);   }
-.program__item:nth-child(6) .program__dot { border:2px solid var(--c-yellow);  }
+.program__item:nth-child(1) .program__dot { border:2px solid var(--c-pink);   color:var(--c-pink-d);  }
+.program__item:nth-child(2) .program__dot { border:2px solid var(--c-violet);  color:var(--c-vio-d);  }
+.program__item:nth-child(3) .program__dot { border:2px solid var(--c-blue);    color:var(--c-blue-d); }
+.program__item:nth-child(4) .program__dot { border:2px solid var(--c-orange);  color:var(--c-orn-d);  }
+.program__item:nth-child(5) .program__dot { border:2px solid var(--c-green);   color:var(--c-grn-d);  }
+.program__item:nth-child(6) .program__dot { border:2px solid var(--c-yellow);  color:var(--c-yel-d);  }
 
 .program__body { background:var(--white); border:1px solid #f0e8d8; border-radius:var(--radius-sm); padding:18px 24px; box-shadow:var(--shadow-sm); }
 .program__time {
@@ -552,7 +552,7 @@ img { max-width:100%; display:block; }
 .entourage__subgroup { border-top:1px solid var(--line); padding-top:12px; margin-top:4px; }
 .entourage__sublabel { font-size:.68rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--rose-dark); margin-bottom:8px; }
 .entourage__group p:not(.entourage__sublabel):not(.entourage__featured-name) { color:var(--muted); font-size:.9rem; padding:3px 0; }
-.entourage__featured-name { font-family:var(--script); font-size:1.8rem; color:var(--royal-dark); line-height:1.2; }
+.entourage__featured-name { color:var(--muted); font-size:.9rem; padding:3px 0; line-height:1.2; }
 .entourage__two-col   { display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:4px; }
 .entourage__three-col { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:4px; }
 .entourage__two-col p, .entourage__three-col p { color:var(--muted); font-size:.9rem; padding:3px 0; }
@@ -611,6 +611,43 @@ img { max-width:100%; display:block; }
 .reminders__card strong { color:var(--royal-dark); }
 
 /* ================================================================
+   MESSAGES FOR THE COUPLE
+   ================================================================ */
+.messages {
+    background:linear-gradient(135deg, var(--c-vio-bg) 0%, var(--c-pink-bg) 100%);
+    border-top:3px solid var(--c-violet); max-width:none;
+}
+.messages .section__head { max-width:1160px; margin-left:auto; margin-right:auto; }
+.messages__wall {
+    max-width:720px; margin:0 auto;
+    max-height:560px; overflow-y:auto;
+    display:flex; flex-direction:column;
+    padding:26px; background:var(--white);
+    border:2px solid var(--c-violet); border-radius:var(--radius);
+    box-shadow:var(--shadow); scroll-behavior:smooth;
+}
+/* Soft scrollbar to match the palette */
+.messages__wall { scrollbar-width:thin; scrollbar-color:var(--c-violet) transparent; }
+.messages__wall::-webkit-scrollbar { width:8px; }
+.messages__wall::-webkit-scrollbar-thumb { background:var(--c-violet); border-radius:8px; }
+.messages__wall::-webkit-scrollbar-track { background:transparent; }
+.messages__empty {
+    text-align:center; color:var(--muted);
+    font-family:var(--serif); font-style:italic; font-size:1.05rem;
+    padding:28px 0; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.messages__card {
+    padding:18px 4px; margin:0;
+    border-bottom:1px solid var(--line);
+}
+.messages__card:last-child { border-bottom:none; }
+.messages__name { font-family:var(--sans); font-size:.85rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--rose-dark); line-height:1.1; margin-bottom:8px; }
+.messages__text {
+    font-family:var(--sans); font-style:normal; font-size:.95rem; line-height:1.7;
+    color:var(--ink); margin:0;
+}
+
+/* ================================================================
    RSVP
    ================================================================ */
 .rsvp { background:var(--bg); border-top:3px solid var(--c-pink); max-width:none; }
@@ -649,16 +686,22 @@ img { max-width:100%; display:block; }
    FOOTER
    ================================================================ */
 .footer {
+    position:relative; overflow:hidden;
     text-align:center; padding:72px 24px;
-    background:linear-gradient(160deg,var(--midnight) 0%,#4a1878 100%);
-    color:var(--bg); display:flex; flex-direction:column; align-items:center; gap:12px;
+    color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:12px;
 }
+.footer::before {
+    content:""; position:absolute; inset:0; z-index:0;
+    background:url("../Pictures/Main_Page_buttom_BG.jpeg") bottom / cover no-repeat;
+    opacity:.15;
+}
+.footer > * { position:relative; z-index:2; }
 .footer__flowers { font-size:1.2rem; letter-spacing:.5em; opacity:.7; }
-.footer__names { font-family:var(--script); font-size:3.2rem; color:var(--rose-light); line-height:1; }
-.footer__date { letter-spacing:.22em; font-size:.78rem; text-transform:uppercase; color:rgba(255,255,255,.65); }
+.footer__names { font-family:var(--script); font-size:3.2rem; color:var(--royal-dark); line-height:1; }
+.footer__date { letter-spacing:.22em; font-size:.78rem; text-transform:uppercase; color:var(--muted); }
 /* Hashtags — match hero eyebrow style ("You are invited!") */
-.footer__hashtags { font-family:var(--sans); font-size:.82rem; font-weight:500; color:var(--rose-light); letter-spacing:.28em; opacity:.95; }
-.footer__quote { font-family:var(--sans); font-size:.82rem; letter-spacing:.15em; color:rgba(255,255,255,.45); margin-top:2px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.footer__hashtags { font-family:var(--sans); font-size:.82rem; font-weight:500; color:var(--rose-dark); letter-spacing:.28em; opacity:.95; }
+.footer__quote { font-family:var(--sans); font-size:.82rem; letter-spacing:.15em; color:var(--muted); margin-top:2px; display:flex; align-items:center; justify-content:center; gap:8px; }
 .footer__pokeball { height:1em; width:auto; object-fit:contain; vertical-align:middle; display:inline-block; }
 .subpage-footer__back { margin-bottom:14px; }
 
@@ -696,8 +739,10 @@ img { max-width:100%; display:block; }
 .rates-table tbody tr:last-child td { border-bottom:none; }
 .rates-table tbody tr:nth-child(even) { background:var(--c-blue-bg); }
 .rates-table tbody td:last-child { font-weight:700; color:var(--royal-dark); }
+.rates-table thead th:nth-child(2), .rates-table tbody td.rates-table__original { text-align:right; }
+.rates-table__original { color:var(--muted); text-decoration:line-through; }
 
-.rates-contact-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:26px; max-width:1000px; margin:0 auto; }
+.rates-contact-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:26px; max-width:1000px; margin:0 auto; }
 .rates-contact-card {
     background:var(--white); border:1px solid var(--line); border-top-width:5px;
     border-radius:var(--radius); padding:32px 26px; text-align:center;
@@ -707,6 +752,7 @@ img { max-width:100%; display:block; }
 .rates-contact-card--pink  { border-top-color:var(--c-pink); }
 .rates-contact-card--blue  { border-top-color:var(--c-blue); }
 .rates-contact-card--green { border-top-color:var(--c-green); }
+.rates-contact-card--orange { border-top-color:var(--c-orange); }
 .rates-contact-icon { font-size:2.2rem; margin-bottom:14px; display:flex; justify-content:center; color:var(--royal); }
 .rates-contact-card h3 { font-family:var(--serif); font-size:1.15rem; color:var(--royal-dark); margin-bottom:12px; }
 .rates-contact-card p { color:var(--muted); font-size:.9rem; line-height:1.6; margin-top:4px; }
@@ -718,16 +764,107 @@ img { max-width:100%; display:block; }
 .rates-booking__note strong { color:var(--ink); }
 
 /* ================================================================
-   REVEAL ANIMATIONS
+   REVEAL ANIMATIONS  — subtle blur-to-focus fade + rise
+   Fires once, the first time an element scrolls into view
+   (IntersectionObserver + unobserve), on every device.
+   --reveal-order is set in JS so grouped elements cascade in.
    ================================================================ */
-.reveal { opacity:0; transform:translateY(36px); transition:opacity .8s ease, transform .8s ease; }
-.reveal.visible { opacity:1; transform:translateY(0); }
+.reveal {
+    opacity:0; transform:translateY(26px);
+    filter:blur(4px);
+    transition:opacity .7s cubic-bezier(.22,.61,.36,1),
+               transform .7s cubic-bezier(.22,.61,.36,1),
+               filter .7s cubic-bezier(.22,.61,.36,1);
+    transition-delay:calc(var(--reveal-order, 0) * 90ms);
+}
+.reveal.visible { opacity:1; transform:translateY(0); filter:blur(0); }
 
 /* ================================================================
    KEYFRAMES
    ================================================================ */
 @keyframes fadeUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
 @keyframes twinkle { 0%{opacity:.4} 50%{opacity:.9} 100%{opacity:.5} }
+@keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+@keyframes softPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.14)} }
+
+/* ================================================================
+   ENHANCED INTERACTIONS
+   Extra hover effects are guarded by (hover:hover) so touch
+   devices never get "stuck" hover states — mobile keeps the
+   scroll-reveal animations, laptops/desktops get hover polish.
+   ================================================================ */
+
+/* Reveal: add a gentle scale for a softer entrance (all devices) */
+.reveal { will-change:opacity, transform; }
+.reveal--fade { transform:translateY(0) scale(.96); }
+
+/* Subtle looping motion on decorative accents (all devices) */
+.section__title::after { animation:softPulse 3.2s ease-in-out infinite; }
+.hero__floral { animation:floatY 6s ease-in-out infinite; }
+
+/* Smooth transition defaults for interactive elements */
+.reminders__icon,
+.entourage__group-icon,
+.venue__badge,
+.countdown__item span,
+.btn .icon,
+.nav__logo-img {
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+
+@media (hover:hover) and (pointer:fine) {
+    /* Card lift + soft glow */
+    .venue__card:hover   { transform:translateY(-8px) scale(1.01); box-shadow:0 22px 52px rgba(60,20,70,.18); }
+    .reminders__card:hover { transform:translateY(-7px); box-shadow:0 20px 48px rgba(60,20,70,.16); }
+    .entourage__group:hover { box-shadow:0 18px 42px rgba(60,20,70,.15); }
+    .prenup__photo:hover { transform:translateY(-8px) scale(1.02); box-shadow:0 18px 40px rgba(60,20,70,.20); }
+
+    /* Icon pop when hovering its card */
+    .reminders__card:hover .reminders__icon,
+    .entourage__group:hover .entourage__group-icon { transform:scale(1.18) translateY(-2px); }
+
+    /* Animated underline for nav links */
+    .nav__links a { position:relative; }
+    .nav__links a::after {
+        content:""; position:absolute; left:0; right:0; bottom:-4px; height:2px;
+        background:currentColor; border-radius:2px;
+        transform:scaleX(0); transform-origin:center; transition:transform .3s ease;
+    }
+    .nav__links a:hover::after { transform:scaleX(1); }
+
+    /* Button icon gently grows on hover */
+    .btn:hover .icon { transform:scale(1.18); }
+
+    /* Logo subtle pop */
+    .nav__logo-img:hover { transform:scale(1.06); }
+}
+
+/* Touch devices: no hover, so give a subtle press-in response on tap.
+   This keeps cards/buttons feeling interactive on mobile. */
+@media (hover:none) {
+    .venue__card, .reminders__card, .entourage__group,
+    .prenup__photo, .btn {
+        transition:transform .2s ease, box-shadow .2s ease;
+    }
+    .venue__card:active, .reminders__card:active,
+    .entourage__group:active, .prenup__photo:active {
+        transform:scale(.98);
+        box-shadow:0 10px 28px rgba(60,20,70,.14);
+    }
+    .btn:active { transform:scale(.96); }
+    .nav__links a:active { color:var(--c-pink); }
+}
+
+/* Respect users who prefer reduced motion — disable all animation */
+@media (prefers-reduced-motion:reduce) {
+    *, *::before, *::after {
+        animation-duration:.001ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.001ms !important;
+        scroll-behavior:auto !important;
+    }
+    .reveal { opacity:1 !important; transform:none !important; }
+}
 
 /* ================================================================
    RESPONSIVE
@@ -739,6 +876,7 @@ img { max-width:100%; display:block; }
     .attire__wrap { grid-template-columns:1fr; gap:36px; }
     .savethedate__card { flex-direction:column; text-align:center; gap:24px; padding:36px 28px; }
     .savethedate__date-badge { border-right:none; border-bottom:2px solid var(--c-blue); padding-right:0; padding-bottom:24px; min-width:auto; }
+    .rates-contact-grid { grid-template-columns:1fr; }
 }
 
 @media (max-width:680px) {
@@ -758,6 +896,7 @@ img { max-width:100%; display:block; }
     .nav__toggle.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
     .nav__toggle.open span:nth-child(2) { opacity:0; }
     .nav__toggle.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+    .nav__toggle.open span { background:var(--ink); }
     body.nav-open { position:fixed; left:0; right:0; overflow:hidden; }
     .section { padding:72px 18px; }
     .form__row { grid-template-columns:1fr; gap:0; }
@@ -768,14 +907,38 @@ img { max-width:100%; display:block; }
     .entourage__two-col   { grid-template-columns:1fr; gap:16px; }
     .entourage__three-col { grid-template-columns:1fr; gap:14px; }
     .venue__grid { grid-template-columns:1fr; }
+    .venue__body { padding:26px 22px 30px; }
     .reminders__grid { grid-template-columns:1fr; }
+    .messages__wall { max-height:460px; padding:18px; }
     .prenup__photo { flex:0 0 240px; }
     .hero__floral svg { height:50px; }
     .story__album-photo { flex:0 0 160px; }
+    /* Tighter section heads + comfy reading spacing on phones */
+    .section__head { margin-bottom:44px; }
+    .countdown { padding:44px 20px; }
+    .countdown__label { margin-bottom:20px; }
+    .btn { padding:13px 28px; }
+    .btn--outline { padding:11px 24px; }
     /* Entourage center rows: stack and center on mobile */
     .entourage__center-row { flex-direction:column; align-items:center; }
     .entourage__center-row .entourage__group { flex:none; width:100%; max-width:360px; }
     .rates-table thead th, .rates-table tbody td { padding:12px 14px; font-size:.85rem; }
+}
+
+/* Small phones — extra layout polish */
+@media (max-width:420px) {
+    .section { padding:60px 16px; }
+    .section__head { margin-bottom:36px; }
+    .hero__date-main { font-size:1.35rem; }
+    .hero__content { padding:0 16px; }
+    .countdown__items { gap:18px; }
+    .countdown__item { min-width:60px; }
+    .rsvp__form { padding:26px 18px; }
+    .venue__body { padding:24px 20px 28px; }
+    .btn { padding:12px 22px; font-size:.72rem; letter-spacing:.14em; }
+    .prenup__photo { flex:0 0 200px; }
+    .prenup__photo img { height:280px; }
+    .story__album-photo { flex:0 0 140px; }
 }
 
 /* ================================================================
@@ -784,12 +947,31 @@ img { max-width:100%; display:block; }
 .pw-gate {
     position:fixed; inset:0; z-index:9999;
     display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
     background:linear-gradient(160deg,#4a1878 0%,#8f4baa 28%,#c87ab8 55%,#f0a0c8 78%,#ffd5e8 100%);
     transition:opacity .6s ease, visibility .6s ease;
 }
 .pw-gate--hidden { opacity:0; visibility:hidden; pointer-events:none; }
+.pw-gate__bg { position:absolute; inset:0; z-index:0; }
+.pw-gate__bg-placeholder {
+    width:100%; height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:12px; border:3px dashed rgba(255,255,255,.35);
+    color:rgba(255,255,255,.6); font-size:.9rem; letter-spacing:.1em;
+}
+.pw-gate__bg-placeholder span {
+    display:inline-block; width:3rem; height:3rem; opacity:.7;
+    background-color:currentColor;
+    -webkit-mask:url("../img/icon-camera.svg") no-repeat center / contain;
+            mask:url("../img/icon-camera.svg") no-repeat center / contain;
+}
+.pw-gate__bg-photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.pw-gate__overlay {
+    position:absolute; inset:0; z-index:1;
+    background:linear-gradient(160deg,rgba(74,24,120,.6) 0%,rgba(143,75,170,.55) 28%,rgba(200,122,184,.5) 55%,rgba(240,160,200,.45) 78%,rgba(255,213,232,.4) 100%);
+}
 .pw-gate__stars {
-    position:absolute; inset:0; opacity:.6; animation:twinkle 4s ease-in-out infinite alternate;
+    position:absolute; inset:0; z-index:2; opacity:.6; animation:twinkle 4s ease-in-out infinite alternate;
     background-image:
         radial-gradient(2px 2px at 10% 20%,#fff,transparent),
         radial-gradient(2px 2px at 80% 10%,#fff,transparent),
@@ -802,7 +984,7 @@ img { max-width:100%; display:block; }
     background-repeat:repeat;
 }
 .pw-gate__card {
-    position:relative; z-index:1;
+    position:relative; z-index:3;
     background:rgba(255,255,255,.14); backdrop-filter:blur(16px);
     border:1px solid rgba(255,255,255,.3); border-radius:24px;
     padding:52px 44px; text-align:center;
@@ -810,12 +992,7 @@ img { max-width:100%; display:block; }
     box-shadow:0 24px 80px rgba(0,0,0,.3);
     animation:fadeUp .8s ease both;
 }
-.pw-gate__logo { height:88px; width:auto; margin:0 auto 18px; filter:invert(1); }
-.pw-gate__names {
-    font-family:var(--script); font-size:2.8rem; color:var(--white);
-    line-height:1; margin-bottom:6px;
-    text-shadow:0 2px 20px rgba(0,0,0,.3);
-}
+.pw-gate__logo { height:160px; width:auto; margin:0 auto 18px; filter:invert(1); }
 .pw-gate__date {
     font-size:.72rem; letter-spacing:.25em; text-transform:uppercase;
     color:rgba(255,255,255,.72); margin-bottom:28px;
