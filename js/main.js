@@ -35,7 +35,8 @@
         program: "Program",
         entourage: "Entourage",
         reminders: "Reminders",
-        rsvp: "RSVP"
+        rsvp: "RSVP",
+        messages: "Messages"
     };
     var sectionIds = Object.keys(sectionMap);
     var allNavAnchors = navLinks ? navLinks.querySelectorAll("a[href^='#']") : [];
@@ -109,6 +110,22 @@
      *  Reveal-on-scroll animations
      * ------------------------------------------------------- */
     var revealEls = document.querySelectorAll(".reveal");
+
+    // Give grouped siblings a staggered order so they cascade in
+    // subtly one after another the first time they scroll into view.
+    revealEls.forEach(function (el) {
+        var siblings = Array.prototype.filter.call(
+            el.parentNode.children,
+            function (c) {
+                return c.classList && c.classList.contains("reveal");
+            }
+        );
+        var idx = siblings.indexOf(el);
+        if (idx > 0) {
+            el.style.setProperty("--reveal-order", Math.min(idx, 6));
+        }
+    });
+
     if ("IntersectionObserver" in window) {
         var observer = new IntersectionObserver(
             function (entries) {
@@ -119,7 +136,7 @@
                     }
                 });
             },
-            { threshold: 0.15 }
+            { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
         );
         revealEls.forEach(function (el) {
             observer.observe(el);
@@ -271,6 +288,110 @@
     }
 
     /* ---------------------------------------------------------
+     *  Messages for the Couple
+     *  Notes left in the RSVP form are shown on a shared message
+     *  wall for every visitor. Backed by a Google Apps Script web
+     *  app (see js/config.js → messagesApi) so all guests — not
+     *  just the one who submitted — can see the notes. Falls back
+     *  to this browser's localStorage if no API is configured.
+     * ------------------------------------------------------- */
+    var MESSAGES_KEY = "wedding_messages";
+    var messagesWall = document.getElementById("messagesWall");
+    var messagesEmpty = document.getElementById("messagesEmpty");
+    var messagesApi = cfg.messagesApi || {};
+    var messagesApiReady =
+        !!messagesApi.url && messagesApi.url.indexOf("SCRIPT_ID") === -1;
+
+    function loadLocalMessages() {
+        try {
+            var raw = window.localStorage.getItem(MESSAGES_KEY);
+            var list = raw ? JSON.parse(raw) : [];
+            return Array.isArray(list) ? list : [];
+        } catch (err) {
+            return [];
+        }
+    }
+
+    function saveLocalMessage(entry) {
+        try {
+            var list = loadLocalMessages();
+            list.push(entry);
+            window.localStorage.setItem(MESSAGES_KEY, JSON.stringify(list));
+        } catch (err) {
+            /* storage unavailable — message just won't persist */
+        }
+    }
+
+    function renderMessage(entry) {
+        if (!messagesWall) return;
+        var card = document.createElement("figure");
+        card.className = "messages__card";
+
+        var name = document.createElement("figcaption");
+        name.className = "messages__name";
+        name.textContent = entry.name;
+
+        var quote = document.createElement("blockquote");
+        quote.className = "messages__text";
+        quote.textContent = entry.message;
+
+        card.appendChild(name);
+        card.appendChild(quote);
+        // Newest message always sits at the very top of the wall.
+        messagesWall.insertBefore(card, messagesWall.firstChild);
+    }
+
+    function showMessages(list) {
+        if (!messagesWall) return;
+        if (messagesEmpty) {
+            messagesEmpty.style.display = list.length ? "none" : "";
+        }
+        // List arrives oldest → newest; each is prepended so newest ends up first.
+        list.forEach(renderMessage);
+    }
+
+    function renderAllMessages() {
+        if (!messagesWall) return;
+        if (messagesApiReady) {
+            fetch(messagesApi.url)
+                .then(function (res) { return res.json(); })
+                .then(function (list) {
+                    showMessages(Array.isArray(list) ? list : []);
+                })
+                .catch(function () {
+                    // API unreachable — show whatever this browser has saved locally.
+                    showMessages(loadLocalMessages());
+                });
+        } else {
+            showMessages(loadLocalMessages());
+        }
+    }
+
+    function addMessage(name, message) {
+        var trimmed = (message || "").trim();
+        if (!trimmed) return;
+        var entry = { name: (name || "A guest").trim(), message: trimmed };
+
+        if (messagesApiReady) {
+            // text/plain avoids a CORS preflight, which Apps Script web apps don't handle.
+            fetch(messagesApi.url, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(entry),
+            }).catch(function () {
+                /* couldn't reach the sheet — note still shows locally below */
+            });
+        } else {
+            saveLocalMessage(entry);
+        }
+
+        if (messagesEmpty) messagesEmpty.style.display = "none";
+        renderMessage(entry);
+    }
+
+    renderAllMessages();
+
+    /* ---------------------------------------------------------
      *  RSVP form -> Google Form submission
      *  Uses a hidden iframe so the browser's no-cors policy
      *  doesn't block the POST and the page doesn't navigate away.
@@ -308,6 +429,15 @@
             submitBtn.disabled = true;
             setStatus("Sending your RSVP…", "");
 
+            // Capture the note (and guest name) before the form resets so we
+            // can post it to the "Messages for the Couple" wall on success.
+            var data = new FormData(form);
+            var guestName = [data.get("firstname"), data.get("lastname")]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+            var guestMessage = (data.get("message") || "").trim();
+
             // Build a hidden form that targets a hidden iframe.
             var iframeName = "gform_target_" + Date.now();
             var iframe = document.createElement("iframe");
@@ -321,7 +451,6 @@
             hiddenForm.target = iframeName;
             hiddenForm.style.display = "none";
 
-            var data = new FormData(form);
             var entries = gf.entries || {};
             Object.keys(entries).forEach(function (field) {
                 var input = document.createElement("input");
@@ -337,6 +466,9 @@
             function finish() {
                 if (done) return;
                 done = true;
+                if (guestMessage) {
+                    addMessage(guestName, guestMessage);
+                }
                 setStatus(
                     "Thank you! Your RSVP has been received.",
                     "success"
