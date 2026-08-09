@@ -46,29 +46,29 @@ window.WEDDING_CONFIG = {
     bgMusicUrl: "music/Be-Our-Guest.mp3", // e.g. "music/our-song.mp3"
 
     /* -------------------------------------------------------
-     *  GOOGLE FORM (RSVP) INTEGRATION
+     *  RSVP INTEGRATION — Google Apps Script + Sheet
      * -------------------------------------------------------
-     *  1. Create a Google Form with the questions you want.
-     *  2. Click the three-dot menu -> "Get pre-filled link".
-     *  3. Fill each field with a placeholder and copy the link.
-     *     You'll see parameters like:  entry.123456789=Sample
-     *  4. Match each form field to your Google Form's entry ID
-     *     below. The action URL is your form's URL with
-     *     "/viewform" replaced by "/formResponse".
+     *  RSVPs are posted straight into a Google Sheet via a small
+     *  Google Apps Script "web app" — same approach as the
+     *  Messages wall below, no Google Form needed.
+     *
+     *  Setup:
+     *  1. Open (or create) the Google Sheet you want RSVPs to
+     *     land in.
+     *  2. Extensions -> Apps Script, delete any starter code, and
+     *     paste in the RSVP Apps Script snippet from the README
+     *     ("Connect the RSVP" section).
+     *  3. Deploy -> New deployment -> type "Web app".
+     *     - Execute as: Me
+     *     - Who has access: Anyone
+     *  4. Copy the Web App URL (ends in /exec) and paste it below.
+     *
+     *  If left as "SCRIPT_ID" (unconfigured), submitting the RSVP
+     *  form shows a "not connected yet" message instead of failing
+     *  silently.
      * ----------------------------------------------------- */
-    googleForm: {
-        // Replace FORM_ID with your real form id.
-        actionUrl:
-            "https://docs.google.com/forms/d/e/FORM_ID/formResponse",
-
-        // Map the site's fields -> your Google Form entry IDs.
-        entries: {
-            name: "entry.1111111111",
-            email: "entry.2222222222",
-            attending: "entry.3333333333",
-            flightHelp: "entry.4444444444",
-            message: "entry.6666666666",
-        },
+    rsvpApi: {
+        url: "https://script.google.com/macros/s/AKfycbzHDBIMDBsGPciSPVChZmCymbMCx4DxmsH3rrk2xs383LKCnpP7eMpa__oLxwWLWWDqvA/exec",
     },
 
     /* -------------------------------------------------------
