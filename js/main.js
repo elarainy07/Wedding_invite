@@ -46,7 +46,11 @@
         var scrollPos = window.scrollY + window.innerHeight * 0.35;
         for (var i = sectionIds.length - 1; i >= 0; i--) {
             var el = document.getElementById(sectionIds[i]);
-            if (el && el.getBoundingClientRect().top + window.scrollY <= scrollPos) {
+            if (
+                el &&
+                el.offsetParent !== null &&
+                el.getBoundingClientRect().top + window.scrollY <= scrollPos
+            ) {
                 current = sectionIds[i];
                 break;
             }
@@ -296,6 +300,7 @@
      *  to this browser's localStorage if no API is configured.
      * ------------------------------------------------------- */
     var MESSAGES_KEY = "wedding_messages";
+    var MESSAGES_VISIBLE = 4;
     var messagesWall = document.getElementById("messagesWall");
     var messagesEmpty = document.getElementById("messagesEmpty");
     var messagesApi = cfg.messagesApi || {};
@@ -341,6 +346,27 @@
         messagesWall.insertBefore(card, messagesWall.firstChild);
     }
 
+    // Caps the wall's visible height to the first MESSAGES_VISIBLE cards so
+    // only that many show at once; any extra messages scroll into view.
+    function updateMessagesWallHeight() {
+        if (!messagesWall) return;
+        var cards = messagesWall.querySelectorAll(".messages__card");
+        if (!cards.length) {
+            messagesWall.style.maxHeight = "";
+            return;
+        }
+        var visibleCount = Math.min(cards.length, MESSAGES_VISIBLE);
+        var height = 0;
+        for (var i = 0; i < visibleCount; i++) {
+            height += cards[i].getBoundingClientRect().height;
+        }
+        var styles = window.getComputedStyle(messagesWall);
+        var paddingY =
+            (parseFloat(styles.paddingTop) || 0) +
+            (parseFloat(styles.paddingBottom) || 0);
+        messagesWall.style.maxHeight = Math.ceil(height + paddingY) + "px";
+    }
+
     function showMessages(list) {
         if (!messagesWall) return;
         if (messagesEmpty) {
@@ -348,7 +374,14 @@
         }
         // List arrives oldest → newest; each is prepended so newest ends up first.
         list.forEach(renderMessage);
+        updateMessagesWallHeight();
     }
+
+    var messagesResizeTimer;
+    window.addEventListener("resize", function () {
+        clearTimeout(messagesResizeTimer);
+        messagesResizeTimer = setTimeout(updateMessagesWallHeight, 150);
+    });
 
     function renderAllMessages() {
         if (!messagesWall) return;
@@ -387,23 +420,56 @@
 
         if (messagesEmpty) messagesEmpty.style.display = "none";
         renderMessage(entry);
+        updateMessagesWallHeight();
     }
 
     renderAllMessages();
 
     /* ---------------------------------------------------------
-     *  RSVP form -> Google Form submission
-     *  Uses a hidden iframe so the browser's no-cors policy
-     *  doesn't block the POST and the page doesn't navigate away.
+     *  RSVP form -> Google Apps Script submission
+     *  Posts straight into a Google Sheet via the Apps Script web
+     *  app configured in js/config.js -> rsvpApi. Uses text/plain
+     *  so the browser skips a CORS preflight (Apps Script web apps
+     *  don't handle OPTIONS requests).
      * ------------------------------------------------------- */
     var form = document.getElementById("rsvpForm");
     var status = document.getElementById("formStatus");
     var submitBtn = document.getElementById("rsvpSubmit");
+    var rsvpSection = document.getElementById("rsvp");
+    var successModal = document.getElementById("rsvpSuccessModal");
+    var successBackdrop = document.getElementById("rsvpSuccessBackdrop");
+    var successClose = document.getElementById("rsvpSuccessClose");
 
     function setStatus(message, type) {
         status.textContent = message;
         status.className = "form__status" + (type ? " " + type : "");
     }
+
+    function showSuccessModal() {
+        if (!successModal) return;
+        successModal.hidden = false;
+        // Force reflow so the appear transition runs.
+        void successModal.offsetWidth;
+        successModal.classList.add("is-visible");
+        document.body.classList.add("modal-open");
+    }
+
+    function hideSuccessModal() {
+        if (!successModal) return;
+        successModal.classList.remove("is-visible");
+        document.body.classList.remove("modal-open");
+        setTimeout(function () {
+            successModal.hidden = true;
+        }, 250);
+    }
+
+    if (successClose) successClose.addEventListener("click", hideSuccessModal);
+    if (successBackdrop) successBackdrop.addEventListener("click", hideSuccessModal);
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && successModal && !successModal.hidden) {
+            hideSuccessModal();
+        }
+    });
 
     if (form) {
         form.addEventListener("submit", function (e) {
@@ -414,13 +480,13 @@
                 return;
             }
 
-            var gf = cfg.googleForm || {};
-            if (
-                !gf.actionUrl ||
-                gf.actionUrl.indexOf("FORM_ID") !== -1
-            ) {
+            var rsvpApi = cfg.rsvpApi || {};
+            var rsvpApiReady =
+                !!rsvpApi.url && rsvpApi.url.indexOf("SCRIPT_ID") === -1;
+
+            if (!rsvpApiReady) {
                 setStatus(
-                    "RSVP isn't connected yet. Add your Google Form details in js/config.js.",
+                    "RSVP isn't connected yet. Add your Google Apps Script details in js/config.js.",
                     "error"
                 );
                 return;
@@ -429,67 +495,82 @@
             submitBtn.disabled = true;
             setStatus("Sending your RSVP…", "");
 
-            // Capture the note (and guest name) before the form resets so we
-            // can post it to the "Messages for the Couple" wall on success.
             var data = new FormData(form);
             var guestName = [data.get("firstname"), data.get("lastname")]
                 .filter(Boolean)
                 .join(" ")
                 .trim();
             var guestMessage = (data.get("message") || "").trim();
+            var payload = {
+                firstname: data.get("firstname") || "",
+                lastname: data.get("lastname") || "",
+                email: data.get("email") || "",
+                attending: data.get("attending") || "",
+                flightHelp: data.get("flightHelp") || "",
+                message: guestMessage,
+            };
 
-            // Build a hidden form that targets a hidden iframe.
-            var iframeName = "gform_target_" + Date.now();
-            var iframe = document.createElement("iframe");
-            iframe.name = iframeName;
-            iframe.style.display = "none";
-            document.body.appendChild(iframe);
-
-            var hiddenForm = document.createElement("form");
-            hiddenForm.action = gf.actionUrl;
-            hiddenForm.method = "POST";
-            hiddenForm.target = iframeName;
-            hiddenForm.style.display = "none";
-
-            var entries = gf.entries || {};
-            Object.keys(entries).forEach(function (field) {
-                var input = document.createElement("input");
-                input.type = "hidden";
-                input.name = entries[field];
-                input.value = data.get(field) || "";
-                hiddenForm.appendChild(input);
-            });
-
-            document.body.appendChild(hiddenForm);
-
-            var done = false;
-            function finish() {
-                if (done) return;
-                done = true;
-                if (guestMessage) {
-                    addMessage(guestName, guestMessage);
-                }
-                setStatus(
-                    "Thank you! Your RSVP has been received.",
-                    "success"
-                );
-                form.reset();
-                submitBtn.disabled = false;
-                setTimeout(function () {
-                    hiddenForm.remove();
-                    iframe.remove();
-                }, 1000);
-            }
-
-            // Google Forms returns an opaque response; the iframe load
-            // event is our best signal that the POST completed.
-            iframe.addEventListener("load", finish);
-            // Fallback in case the load event never fires.
-            setTimeout(finish, 2500);
-
-            hiddenForm.submit();
+            fetch(rsvpApi.url, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload),
+            })
+                .then(function () {
+                    if (guestMessage) {
+                        addMessage(guestName, guestMessage);
+                    }
+                    form.reset();
+                    setStatus("", "");
+                    if (rsvpSection) rsvpSection.hidden = true;
+                    showSuccessModal();
+                })
+                .catch(function () {
+                    setStatus(
+                        "Something went wrong sending your RSVP. Please try again.",
+                        "error"
+                    );
+                })
+                .then(function () {
+                    submitBtn.disabled = false;
+                });
         });
     }
+})();
+
+/* ---------------------------------------------------------
+ *  Gift QR modal
+ * ------------------------------------------------------- */
+(function () {
+    var openBtn = document.getElementById("giftQrBtn");
+    var modal = document.getElementById("giftQrModal");
+    var backdrop = document.getElementById("giftQrBackdrop");
+    var closeBtn = document.getElementById("giftQrClose");
+    if (!openBtn || !modal) return;
+
+    function showModal() {
+        modal.hidden = false;
+        // Force reflow so the appear transition runs.
+        void modal.offsetWidth;
+        modal.classList.add("is-visible");
+        document.body.classList.add("modal-open");
+    }
+
+    function hideModal() {
+        modal.classList.remove("is-visible");
+        document.body.classList.remove("modal-open");
+        setTimeout(function () {
+            modal.hidden = true;
+        }, 250);
+    }
+
+    openBtn.addEventListener("click", showModal);
+    if (closeBtn) closeBtn.addEventListener("click", hideModal);
+    if (backdrop) backdrop.addEventListener("click", hideModal);
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !modal.hidden) {
+            hideModal();
+        }
+    });
 })();
 
 /* ---------------------------------------------------------

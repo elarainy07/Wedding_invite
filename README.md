@@ -3,7 +3,7 @@
 A single-page, fully responsive, fairytale-themed wedding invitation with three
 Google integrations:
 
-- **Google Forms** — the RSVP form posts guest responses straight into a Google Form (and its linked Sheet).
+- **Google Sheets (via Apps Script)** — the RSVP form posts guest responses straight into a Google Sheet.
 - **Google Maps** — an embedded venue map plus a one-tap "Get Directions" link.
 - **Google Calendar** — an "Add to Google Calendar" button pre-filled with the event details.
 
@@ -21,7 +21,7 @@ claude_weedding/
 ├── index.html        # Page markup
 ├── css/style.css     # All styling
 └── js/
-    ├── config.js     # ← Edit this: names, dates, venue, Google Form IDs
+    ├── config.js     # ← Edit this: names, dates, venue, Apps Script URLs
     └── main.js       # Countdown, animations, calendar + RSVP logic
 ```
 
@@ -53,23 +53,68 @@ Drive, then set `saveTheDateVideoUrl` in `js/config.js` to the embed URL, e.g.
 `https://www.youtube.com/embed/VIDEO_ID`. Until it's set, the site shows a
 styled "coming soon" placeholder automatically.
 
-## 3. Connect the RSVP (Google Forms)
+## 3. Connect the RSVP (Google Apps Script + Sheet)
 
-1. Create a **Google Form** with fields matching the site: Name, Email,
-   Attending, Guests, Meal, Message.
-2. In the form editor, open the **⋮ menu → Get pre-filled link**.
-3. Fill in each field with any placeholder text and click **Get link / Copy**.
-4. The copied URL contains parameters like `entry.123456789=Placeholder`.
-   Copy each `entry.XXXXXXXXX` id.
-5. In `js/config.js`, set:
-   - `googleForm.actionUrl` — your form URL with `/viewform` replaced by
-     `/formResponse`.
-   - `googleForm.entries` — map each site field to its matching `entry.` id.
+RSVPs post straight into a Google Sheet via a small free **Google Apps
+Script** web app — same approach as the Messages wall in step 6, no Google
+Form needed.
 
-That's it — responses land in the Form's **Responses** tab and any linked Sheet.
+1. Open the Google Sheet you want RSVPs saved to (e.g. the one you already
+   created for this project).
+2. Open **Extensions → Apps Script**, delete any starter code, and paste in:
 
-> The form submits via a hidden iframe, so guests stay on the page and see a
-> friendly confirmation message.
+   ```javascript
+   const SHEET_NAME = "RSVPs";
+
+   function doPost(e) {
+     const data = JSON.parse(e.postData.contents);
+     getSheet().appendRow([
+       new Date(),
+       (data.firstname || "").toString().trim(),
+       (data.lastname || "").toString().trim(),
+       (data.email || "").toString().trim(),
+       (data.attending || "").toString().trim(),
+       (data.flightHelp || "").toString().trim(),
+       (data.message || "").toString().trim(),
+     ]);
+     return jsonResponse({ ok: true });
+   }
+
+   function getSheet() {
+     const ss = SpreadsheetApp.getActiveSpreadsheet();
+     let sheet = ss.getSheetByName(SHEET_NAME);
+     if (!sheet) {
+       sheet = ss.insertSheet(SHEET_NAME);
+       sheet.appendRow([
+         "Timestamp",
+         "First Name",
+         "Last Name",
+         "Email",
+         "Attending",
+         "Flight Help",
+         "Message",
+       ]);
+     }
+     return sheet;
+   }
+
+   function jsonResponse(obj) {
+     return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
+       ContentService.MimeType.JSON
+     );
+   }
+   ```
+
+3. Click **Deploy → New deployment**, select type **Web app**.
+   - **Execute as:** Me
+   - **Who has access:** Anyone
+4. Click **Deploy**, authorize the script, then copy the **Web app URL**
+   (it ends in `/exec`).
+5. Paste it into `js/config.js` as `rsvpApi.url`.
+
+Responses land in the sheet's **RSVPs** tab, newest at the bottom. If
+`rsvpApi.url` is left unconfigured (`SCRIPT_ID`), the RSVP form shows a
+"not connected yet" message instead of failing silently.
 
 ## 4. Google Maps
 

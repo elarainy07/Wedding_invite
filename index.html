@@ -351,6 +351,7 @@
             <div class="reminders__icon"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-gift"></use></svg></div>
             <h3>Gift Guide</h3>
             <p>Your presence is truly the greatest gift! If you&#8217;d like to give something, we truly prefer a <strong>monetary gift</strong> &#8212; we can&#8217;t quite imagine how we&#8217;d bring physical gifts all the way from the Philippines back to Ireland! E-wallet transfers are warmly welcomed.</p>
+            <button type="button" class="btn btn--dark reminders__gift-btn" id="giftQrBtn">View Bank QR Code <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-gift"></use></svg></button>
         </div>
 
         <div class="reminders__card reminders__card--green reveal">
@@ -379,6 +380,26 @@
 
     </div>
 </section>
+
+<!-- GIFT QR MODAL -->
+<div class="rsvp-modal gift-modal" id="giftQrModal" role="dialog" aria-modal="true" aria-labelledby="giftQrTitle" hidden>
+    <div class="rsvp-modal__backdrop" id="giftQrBackdrop"></div>
+    <div class="rsvp-modal__box gift-modal__box">
+        <h3 class="rsvp-modal__title" id="giftQrTitle">Scan to Send a Gift</h3>
+        <p class="rsvp-modal__text">Thank you for your generosity! Scan either QR code below using your banking or e-wallet app.</p>
+        <div class="gift-modal__qrs">
+            <div class="img-placeholder img-placeholder--qr">
+                <span></span>
+                <p>Bank QR</p>
+            </div>
+            <div class="img-placeholder img-placeholder--qr">
+                <span></span>
+                <p>E-Wallet QR</p>
+            </div>
+        </div>
+        <button type="button" class="btn btn--dark rsvp-modal__close" id="giftQrClose">Close</button>
+    </div>
+</div>
 
 <!-- RSVP -->
 <section class="section rsvp" id="rsvp">
@@ -428,6 +449,17 @@
         <p class="form__status" id="formStatus" role="status" aria-live="polite"></p>
     </form>
 </section>
+
+<!-- RSVP SUCCESS MODAL -->
+<div class="rsvp-modal" id="rsvpSuccessModal" role="dialog" aria-modal="true" aria-labelledby="rsvpSuccessTitle" hidden>
+    <div class="rsvp-modal__backdrop" id="rsvpSuccessBackdrop"></div>
+    <div class="rsvp-modal__box">
+        <svg class="icon rsvp-modal__icon" aria-hidden="true"><use href="img/icons.svg#icon-hearts"></use></svg>
+        <h3 class="rsvp-modal__title" id="rsvpSuccessTitle">Thank you!</h3>
+        <p class="rsvp-modal__text">Your RSVP has been received.</p>
+        <button type="button" class="btn btn--dark rsvp-modal__close" id="rsvpSuccessClose">Close</button>
+    </div>
+</div>
 
 <!-- MESSAGES FOR THE COUPLE -->
 <section class="section messages" id="messages">
