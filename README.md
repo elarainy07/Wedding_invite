@@ -3,7 +3,7 @@
 A single-page, fully responsive, fairytale-themed wedding invitation with three
 Google integrations:
 
-- **Google Sheets (via Apps Script)** — the RSVP form posts guest responses straight into a Google Sheet.
+- **Google Sheets (via Apps Script)** — the RSVP form and the Messages-for-the-Couple wall both post into one Google Sheet (separate tabs), through a single Apps Script web app.
 - **Google Maps** — an embedded venue map plus a one-tap "Get Directions" link.
 - **Google Calendar** — an "Add to Google Calendar" button pre-filled with the event details.
 
@@ -53,98 +53,29 @@ Drive, then set `saveTheDateVideoUrl` in `js/config.js` to the embed URL, e.g.
 `https://www.youtube.com/embed/VIDEO_ID`. Until it's set, the site shows a
 styled "coming soon" placeholder automatically.
 
-## 3. Connect the RSVP (Google Apps Script + Sheet)
+## 3. Connect RSVP, Messages & Password (one Google Apps Script + Sheet)
 
-RSVPs post straight into a Google Sheet via a small free **Google Apps
-Script** web app — same approach as the Messages wall in step 6, no Google
-Form needed.
+RSVPs, the Messages-for-the-Couple wall, and the password gate all share a
+**single Google Sheet** (two tabs: `RSVPs` and `Messages`) through **one
+small free Google Apps Script** web app — no Google Form, no extra sheet,
+no server needed.
 
-1. Open the Google Sheet you want RSVPs saved to (e.g. the one you already
-   created for this project).
+1. Open the Google Sheet you want everything saved to (e.g. the one you
+   already created for this project). Both tabs are created automatically
+   the first time each is written to.
 2. Open **Extensions → Apps Script**, delete any starter code, and paste in:
 
    ```javascript
-   const SHEET_NAME = "RSVPs";
-
-   function doPost(e) {
-     const data = JSON.parse(e.postData.contents);
-     getSheet().appendRow([
-       new Date(),
-       (data.firstname || "").toString().trim(),
-       (data.lastname || "").toString().trim(),
-       (data.email || "").toString().trim(),
-       (data.attending || "").toString().trim(),
-       (data.flightHelp || "").toString().trim(),
-       (data.message || "").toString().trim(),
-     ]);
-     return jsonResponse({ ok: true });
-   }
-
-   function getSheet() {
-     const ss = SpreadsheetApp.getActiveSpreadsheet();
-     let sheet = ss.getSheetByName(SHEET_NAME);
-     if (!sheet) {
-       sheet = ss.insertSheet(SHEET_NAME);
-       sheet.appendRow([
-         "Timestamp",
-         "First Name",
-         "Last Name",
-         "Email",
-         "Attending",
-         "Flight Help",
-         "Message",
-       ]);
-     }
-     return sheet;
-   }
-
-   function jsonResponse(obj) {
-     return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
-       ContentService.MimeType.JSON
-     );
-   }
-   ```
-
-3. Click **Deploy → New deployment**, select type **Web app**.
-   - **Execute as:** Me
-   - **Who has access:** Anyone
-4. Click **Deploy**, authorize the script, then copy the **Web app URL**
-   (it ends in `/exec`).
-5. Paste it into `js/config.js` as `rsvpApi.url`.
-
-Responses land in the sheet's **RSVPs** tab, newest at the bottom. If
-`rsvpApi.url` is left unconfigured (`SCRIPT_ID`), the RSVP form shows a
-"not connected yet" message instead of failing silently.
-
-## 4. Google Maps
-
-The venue map is an `<iframe>` in `index.html`. To change the location, edit the
-`src` query in the map iframe and the `destination` in the **Get Directions**
-link. For an API-key-based dynamic map you can swap in the
-[Maps Embed API](https://developers.google.com/maps/documentation/embed/get-started),
-but the current embed needs **no API key**.
-
-## 5. Google Calendar
-
-Handled automatically in `js/main.js` from `eventStart` / `eventEnd` in the
-config — no setup required.
-
-## 6. Messages for the Couple (shared guest message wall)
-
-The **Messages for the Couple** section (right under RSVP) shows every guest's
-note to everyone who visits the site, newest first, in a scrollable block. It's
-powered by a small free **Google Apps Script** web app backed by a Google
-Sheet — no server needed.
-
-1. Go to [sheet.new](https://sheet.new) to create a blank Google Sheet.
-2. Open **Extensions → Apps Script**, delete any starter code, and paste in:
-
-   ```javascript
-   const SHEET_NAME = "Messages";
+   const RSVP_SHEET_NAME = "RSVPs";
+   const MESSAGES_SHEET_NAME = "Messages";
+   const FLIGHT_HELP_EMAIL = "judeaeddrian@gmail.com";
+   const FLIGHT_HELP_YES = "Yes, please help me find a cheap flight";
 
    function doGet(e) {
-     const sheet = getSheet();
-     const rows = sheet.getDataRange().getValues().slice(1); // skip header
+     const rows = getSheet(MESSAGES_SHEET_NAME, ["Name", "Message", "Timestamp"])
+       .getDataRange()
+       .getValues()
+       .slice(1); // skip header
      const messages = rows
        .filter(function (r) { return r[0] && r[1]; })
        .map(function (r) { return { name: r[0], message: r[1] }; })
@@ -154,19 +85,87 @@ Sheet — no server needed.
 
    function doPost(e) {
      const data = JSON.parse(e.postData.contents);
-     const name = (data.name || "A guest").toString().trim().slice(0, 100);
-     const message = (data.message || "").toString().trim().slice(0, 1000);
-     if (!message) return jsonResponse({ ok: false, error: "Empty message" });
-     getSheet().appendRow([name, message, new Date()]);
+
+     if (data.action === "checkPassword") {
+       return jsonResponse({ ok: checkPassword(data.password) });
+     }
+
+     if (data.action === "message") {
+       return saveMessage(data);
+     }
+
+     return saveRsvp(data);
+   }
+
+   function saveRsvp(data) {
+     const flightHelp = (data.flightHelp || "").toString().trim();
+
+     getSheet(RSVP_SHEET_NAME, [
+       "Timestamp",
+       "First Name",
+       "Last Name",
+       "Email",
+       "Attending",
+       "Flight Help",
+       "Message",
+     ]).appendRow([
+       new Date(),
+       (data.firstname || "").toString().trim(),
+       (data.lastname || "").toString().trim(),
+       (data.email || "").toString().trim(),
+       (data.attending || "").toString().trim(),
+       flightHelp,
+       (data.message || "").toString().trim(),
+     ]);
+
+     if (flightHelp === FLIGHT_HELP_YES) {
+       notifyJude(data);
+     }
+
      return jsonResponse({ ok: true });
    }
 
-   function getSheet() {
+   function saveMessage(data) {
+     const name = (data.name || "A guest").toString().trim().slice(0, 100);
+     const message = (data.message || "").toString().trim().slice(0, 1000);
+     if (!message) return jsonResponse({ ok: false, error: "Empty message" });
+     getSheet(MESSAGES_SHEET_NAME, ["Name", "Message", "Timestamp"]).appendRow([
+       name,
+       message,
+       new Date(),
+     ]);
+     return jsonResponse({ ok: true });
+   }
+
+   function notifyJude(data) {
+     const name = [
+       (data.firstname || "").toString().trim(),
+       (data.lastname || "").toString().trim(),
+     ]
+       .filter(Boolean)
+       .join(" ") || "A guest";
+     const email = (data.email || "").toString().trim() || "not provided";
+
+     MailApp.sendEmail({
+       to: FLIGHT_HELP_EMAIL,
+       subject: "Flight help requested: " + name,
+       body:
+         name + " would like help finding a cheap flight for the wedding.\n\n" +
+         "Guest email: " + email,
+     });
+   }
+
+   function checkPassword(candidate) {
+     const real = PropertiesService.getScriptProperties().getProperty("SITE_PASSWORD") || "";
+     return !!real && (candidate || "").toString() === real;
+   }
+
+   function getSheet(name, headerRow) {
      const ss = SpreadsheetApp.getActiveSpreadsheet();
-     let sheet = ss.getSheetByName(SHEET_NAME);
+     let sheet = ss.getSheetByName(name);
      if (!sheet) {
-       sheet = ss.insertSheet(SHEET_NAME);
-       sheet.appendRow(["Name", "Message", "Timestamp"]);
+       sheet = ss.insertSheet(name);
+       sheet.appendRow(headerRow);
      }
      return sheet;
    }
@@ -183,11 +182,56 @@ Sheet — no server needed.
    - **Who has access:** Anyone
 4. Click **Deploy**, authorize the script, then copy the **Web app URL**
    (it ends in `/exec`).
-5. Paste it into `js/config.js` as `messagesApi.url`.
+5. Paste that **same URL** into `js/config.js` in all three places:
+   `rsvpApi.url`, `messagesApi.url`, and `passwordApi.url`.
 
-If `messagesApi.url` is left unconfigured, the site quietly falls back to
-saving messages only in each guest's own browser (`localStorage`), so nothing
-breaks — but only that guest will see their own notes.
+RSVPs land in the **RSVPs** tab and guest notes land in the **Messages**
+tab, both auto-created on first write, newest rows at the bottom. If
+`rsvpApi.url` is left unconfigured (`SCRIPT_ID`), the RSVP form shows a
+"not connected yet" message instead of failing silently; if
+`messagesApi.url` is left unconfigured, messages are only saved in each
+guest's own browser (`localStorage`).
+
+### Add the site password
+
+The password gate keeps the invitation private, but a plain password stored
+in `js/config.js` isn't real security — anyone can view page source and read
+it. The `checkPassword` function pasted above already handles this
+server-side, so the real password never ships to the browser — you just
+need to set it:
+
+1. In the Apps Script project from above: **Project Settings** (gear icon)
+   → **Script Properties** → **Add script property** → name
+   `SITE_PASSWORD`, value = the real password (never committed to this
+   repo).
+2. **Deploy → Manage deployments** → edit the existing deployment → under
+   **Version** choose **New version** → **Deploy**, so the URL stays the
+   same but picks up the change.
+
+If `passwordApi.url` is left empty, the site falls back to comparing against
+`localPassword` in `js/config.js` — fine for local testing, but not secure
+for real guests since that value ships in plain text.
+
+## 5. Google Maps
+
+The venue map is an `<iframe>` in `index.html`. To change the location, edit the
+`src` query in the map iframe and the `destination` in the **Get Directions**
+link. For an API-key-based dynamic map you can swap in the
+[Maps Embed API](https://developers.google.com/maps/documentation/embed/get-started),
+but the current embed needs **no API key**.
+
+## 6. Google Calendar
+
+Handled automatically in `js/main.js` from `eventStart` / `eventEnd` in the
+config — no setup required.
+
+## 7. Messages for the Couple (shared guest message wall)
+
+The **Messages for the Couple** section (right under RSVP) shows every guest's
+note to everyone who visits the site, newest first, in a scrollable block.
+It's powered by the same Apps Script + Sheet set up in
+[step 3](#3-connect-rsvp-messages--password-one-google-apps-script--sheet) —
+there's nothing extra to deploy here.
 
 ## Deploy
 

@@ -168,6 +168,39 @@ img { max-width:100%; display:block; }
 .hero__floral { position:absolute; bottom:0; left:0; width:100%; z-index:2; line-height:0; }
 .hero__floral svg { display:block; width:100%; height:80px; }
 
+.hero__scroll {
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    width:fit-content; margin:44px auto 0;
+    color:rgba(255,255,255,.85); text-decoration:none;
+    font-size:.68rem; letter-spacing:.22em; text-transform:uppercase;
+    animation:hero-scroll-fade-up 1.6s ease both;
+}
+.hero__scroll-mouse {
+    width:24px; height:38px; border:2px solid rgba(255,255,255,.75); border-radius:14px; position:relative;
+}
+.hero__scroll-mouse::before {
+    content:""; position:absolute; top:6px; left:50%; width:4px; height:8px;
+    background:rgba(255,255,255,.9); border-radius:2px; transform:translateX(-50%);
+    animation:hero-scroll-wheel 1.8s ease infinite;
+}
+.hero__scroll-chevron {
+    width:9px; height:9px; border-right:2px solid rgba(255,255,255,.75); border-bottom:2px solid rgba(255,255,255,.75);
+    transform:rotate(45deg); animation:hero-scroll-bounce 1.8s ease infinite;
+}
+@keyframes hero-scroll-fade-up {
+    from { opacity:0; transform:translateY(40px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+@keyframes hero-scroll-wheel {
+    0% { opacity:1; transform:translate(-50%,0); }
+    70% { opacity:0; transform:translate(-50%,14px); }
+    100% { opacity:0; transform:translate(-50%,14px); }
+}
+@keyframes hero-scroll-bounce {
+    0%,100% { transform:rotate(45deg) translate(0,0); }
+    50% { transform:rotate(45deg) translate(4px,4px); }
+}
+
 /* ================================================================
    SUBPAGE HERO  — Our Love Story / Entourage standalone pages
    ================================================================ */
@@ -436,8 +469,9 @@ img { max-width:100%; display:block; }
 /* Location note — matches .section__sub style */
 .venue__location-note {
     font-family:var(--serif); font-style:italic; color:var(--muted);
-    font-size:1.05rem; margin-top:14px; display:block;
+    font-size:1.05rem; margin-top:14px; display:block; text-align:center;
 }
+.venue__note-shuttle { display:block; margin-top:6px; }
 
 /* ================================================================
    ATTIRE GUIDE  — orange bg
@@ -696,11 +730,11 @@ body.modal-open { overflow:hidden; }
 .rsvp-modal {
     position:fixed; inset:0; z-index:9998;
     display:flex; align-items:center; justify-content:center;
-    padding:24px;
+    padding:24px; overflow-y:auto;
 }
 .rsvp-modal[hidden] { display:none; }
 .rsvp-modal__backdrop {
-    position:absolute; inset:0;
+    position:fixed; inset:0;
     background:rgba(43,20,40,.55);
     opacity:0; transition:opacity .25s ease;
 }
@@ -709,6 +743,7 @@ body.modal-open { overflow:hidden; }
     background:var(--white); border-radius:var(--radius);
     border:2px solid var(--c-pink); box-shadow:0 24px 60px rgba(0,0,0,.25);
     max-width:400px; width:100%; padding:44px 36px;
+    margin:auto;
     text-align:center;
     opacity:0; transform:translateY(16px) scale(.97);
     transition:opacity .3s ease, transform .3s ease;
@@ -721,7 +756,7 @@ body.modal-open { overflow:hidden; }
 .rsvp-modal__close { min-width:140px; }
 .gift-modal .rsvp-modal__box { max-width:560px; }
 .gift-modal__qrs { display:flex; flex-wrap:wrap; gap:18px; justify-content:center; margin-bottom:28px; }
-.gift-modal__qrs .img-placeholder { flex:1 1 200px; }
+.gift-modal__qrs .img-placeholder { flex:1 1 200px; max-width:200px; }
 
 /* ================================================================
    FOOTER
@@ -949,10 +984,13 @@ body.modal-open { overflow:hidden; }
     .entourage__three-col { grid-template-columns:1fr; gap:14px; }
     .venue__grid { grid-template-columns:1fr; }
     .venue__body { padding:26px 22px 30px; }
+    .venue__note-shuttle { font-size:.85rem; }
     .reminders__grid { grid-template-columns:1fr; }
     .messages__wall { max-height:460px; padding:18px; }
     .prenup__photo { flex:0 0 240px; }
     .hero__floral svg { height:50px; }
+    .hero__scroll { margin-top:28px; }
+
     .story__album-photo { flex:0 0 160px; }
     /* Tighter section heads + comfy reading spacing on phones */
     .section__head { margin-bottom:44px; }
@@ -964,6 +1002,15 @@ body.modal-open { overflow:hidden; }
     .entourage__center-row { flex-direction:column; align-items:center; }
     .entourage__center-row .entourage__group { flex:none; width:100%; max-width:360px; }
     .rates-table thead th, .rates-table tbody td { padding:12px 14px; font-size:.85rem; }
+
+    /* Keep RSVP/gift modals compact instead of stretching full-screen */
+    .rsvp-modal { padding:16px; }
+    .rsvp-modal__box { padding:30px 22px; }
+    .rsvp-modal__title { font-size:1.3rem; }
+    .rsvp-modal__text { font-size:.9rem; margin-bottom:20px; }
+    .gift-modal__qrs { gap:12px; margin-bottom:20px; }
+    .gift-modal__qrs .img-placeholder { flex:0 1 120px; max-width:120px; min-height:0; }
+    .img-placeholder--qr { min-height:120px; }
 }
 
 /* Small phones — extra layout polish */

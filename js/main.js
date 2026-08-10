@@ -403,7 +403,7 @@
     function addMessage(name, message) {
         var trimmed = (message || "").trim();
         if (!trimmed) return;
-        var entry = { name: (name || "A guest").trim(), message: trimmed };
+        var entry = { action: "message", name: (name || "A guest").trim(), message: trimmed };
 
         if (messagesApiReady) {
             // text/plain avoids a CORS preflight, which Apps Script web apps don't handle.
@@ -502,6 +502,7 @@
                 .trim();
             var guestMessage = (data.get("message") || "").trim();
             var payload = {
+                action: "rsvp",
                 firstname: data.get("firstname") || "",
                 lastname: data.get("lastname") || "",
                 email: data.get("email") || "",
@@ -626,41 +627,84 @@
     var pwForm      = document.getElementById("pwForm");
     var pwInput     = document.getElementById("pwInput");
     var pwError     = document.getElementById("pwError");
-    var sitePass    = (cfg.sitePassword || "").trim();
+    var pwSubmit    = pwForm ? pwForm.querySelector(".pw-gate__btn") : null;
+    var apiUrl      = ((cfg.passwordApi || {}).url || "").trim();
+    var localPass   = (cfg.localPassword || "").trim();
 
     if (!pwGate) return;
 
     function unlockSite() {
+        // Dismiss the mobile keyboard first — on iOS/Android, focusing the
+        // password input can silently scroll the page behind the fixed
+        // overlay, so we force the hero section back into view on unlock.
+        if (pwInput) pwInput.blur();
         pwGate.classList.add("pw-gate--hidden");
         document.body.style.overflow = "";
-        try { sessionStorage.setItem("nj_unlocked", "ok:" + sitePass); } catch (e) {}
+        window.scrollTo(0, 0);
+        // The keyboard-dismiss animation on mobile can re-settle the scroll
+        // position a moment later, so reassert it once more after it closes.
+        setTimeout(function () { window.scrollTo(0, 0); }, 350);
+        try { sessionStorage.setItem("nj_unlocked", "1"); } catch (e) {}
         window.dispatchEvent(new CustomEvent("siteUnlocked"));
     }
 
     var alreadyUnlocked = false;
-    try { alreadyUnlocked = sessionStorage.getItem("nj_unlocked") === ("ok:" + sitePass); } catch (e) {}
+    try { alreadyUnlocked = sessionStorage.getItem("nj_unlocked") === "1"; } catch (e) {}
 
-    if (!sitePass || alreadyUnlocked) { unlockSite(); return; }
+    if ((!apiUrl && !localPass) || alreadyUnlocked) { unlockSite(); return; }
 
     document.body.style.overflow = "hidden";
     setTimeout(function () { if (pwInput) pwInput.focus(); }, 100);
+
+    function showError(msg) {
+        if (pwError) pwError.textContent = msg;
+        if (pwInput) {
+            pwInput.value = "";
+            pwInput.classList.remove("pw-gate__input--shake");
+            void pwInput.offsetWidth;
+            pwInput.classList.add("pw-gate__input--shake");
+            pwInput.focus();
+        }
+    }
+
+    function setChecking(isChecking) {
+        if (pwSubmit) pwSubmit.disabled = isChecking;
+        if (pwInput) pwInput.disabled = isChecking;
+    }
 
     if (pwForm) {
         pwForm.addEventListener("submit", function (e) {
             e.preventDefault();
             var val = pwInput ? pwInput.value.trim() : "";
-            if (val === sitePass) {
-                unlockSite();
-            } else {
-                if (pwError) pwError.textContent = "Incorrect password. Please try again. \u2728";
-                if (pwInput) {
-                    pwInput.value = "";
-                    pwInput.classList.remove("pw-gate__input--shake");
-                    void pwInput.offsetWidth;
-                    pwInput.classList.add("pw-gate__input--shake");
-                    pwInput.focus();
-                }
+            if (!val) return;
+
+            if (!apiUrl) {
+                // Insecure fallback for local testing only — see config.js.
+                if (val === localPass) unlockSite();
+                else showError("Incorrect password. Please try again. \u2728");
+                return;
             }
+
+            setChecking(true);
+            // text/plain avoids a CORS preflight, which Apps Script web apps don't handle.
+            fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "checkPassword", password: val }),
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    setChecking(false);
+                    if (data && data.ok) {
+                        unlockSite();
+                    } else {
+                        showError("Incorrect password. Please try again. \u2728");
+                    }
+                })
+                .catch(function () {
+                    setChecking(false);
+                    showError("Couldn't verify the password right now. Please try again. \u2728");
+                });
         });
     }
 })();
@@ -818,8 +862,9 @@
     // already-unlocked page (either detected via sessionStorage, or proven by
     // arriving through one of our own tagged links) — resume automatically so
     // the music carries over from page to page instead of stopping.
+    var gateEnabled = !!((cfg.passwordApi || {}).url || cfg.localPassword || "").trim();
     var alreadyUnlocked = false;
-    try { alreadyUnlocked = sessionStorage.getItem("nj_unlocked") === ("ok:" + (cfg.sitePassword || "")); } catch (e) {}
-    if ((!(cfg.sitePassword || "") || alreadyUnlocked || cameFromInternalNav) && !userPaused) setTimeout(doPlay, 300);
+    try { alreadyUnlocked = sessionStorage.getItem("nj_unlocked") === "1"; } catch (e) {}
+    if ((!gateEnabled || alreadyUnlocked || cameFromInternalNav) && !userPaused) setTimeout(doPlay, 300);
 })();
 
