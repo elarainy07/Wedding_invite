@@ -70,7 +70,7 @@ no server needed.
    ```javascript
    const RSVP_SHEET_NAME = "RSVPs";
    const MESSAGES_SHEET_NAME = "Messages";
-   const FLIGHT_HELP_EMAIL = "judeaeddrian@gmail.com";
+   const FLIGHT_HELP_EMAIL = "email_address";
    const FLIGHT_HELP_YES = "Yes, please help me find a cheap flight";
 
    function doGet(e) {

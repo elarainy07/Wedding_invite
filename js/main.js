@@ -1,6 +1,19 @@
 /**
  * Wedding invitation — interactions & Google integrations.
  */
+
+/* ================================================================
+ *  Per-page teardown registry
+ *  The seamless router (bottom of this file) re-executes this
+ *  script after swapping in a new page's content. Any per-page
+ *  timers, animation loops, observers or global listeners must be
+ *  disposed before the next page re-binds, so modules register a
+ *  cleanup here and the router runs them on each navigation.
+ * ================================================================ */
+window.__onCleanup = function (fn) {
+    (window.__njCleanups = window.__njCleanups || []).push(fn);
+};
+
 (function () {
     "use strict";
 
@@ -13,12 +26,16 @@
     var navToggle = document.getElementById("navToggle");
     var navLinks = document.getElementById("navLinks");
 
-    window.addEventListener("scroll", function () {
+    function onNavScroll() {
         if (window.scrollY > 60) {
             nav.classList.add("scrolled");
         } else {
             nav.classList.remove("scrolled");
         }
+    }
+    window.addEventListener("scroll", onNavScroll);
+    window.__onCleanup(function () {
+        window.removeEventListener("scroll", onNavScroll);
     });
 
     /* ---------------------------------------------------------
@@ -76,6 +93,9 @@
 
     window.addEventListener("scroll", updateSectionLabel, { passive: true });
     updateSectionLabel();
+    window.__onCleanup(function () {
+        window.removeEventListener("scroll", updateSectionLabel);
+    });
 
     var navScrollY = 0;
 
@@ -145,6 +165,9 @@
         revealEls.forEach(function (el) {
             observer.observe(el);
         });
+        window.__onCleanup(function () {
+            observer.disconnect();
+        });
     } else {
         revealEls.forEach(function (el) {
             el.classList.add("visible");
@@ -185,7 +208,10 @@
 
     if (target && hasCountdown) {
         tick();
-        setInterval(tick, 1000);
+        var countdownTimer = setInterval(tick, 1000);
+        window.__onCleanup(function () {
+            clearInterval(countdownTimer);
+        });
     }
 
     /* ---------------------------------------------------------
@@ -378,9 +404,13 @@
     }
 
     var messagesResizeTimer;
-    window.addEventListener("resize", function () {
+    function onMessagesResize() {
         clearTimeout(messagesResizeTimer);
         messagesResizeTimer = setTimeout(updateMessagesWallHeight, 150);
+    }
+    window.addEventListener("resize", onMessagesResize);
+    window.__onCleanup(function () {
+        window.removeEventListener("resize", onMessagesResize);
     });
 
     function renderAllMessages() {
@@ -439,14 +469,29 @@
     var successModal = document.getElementById("rsvpSuccessModal");
     var successBackdrop = document.getElementById("rsvpSuccessBackdrop");
     var successClose = document.getElementById("rsvpSuccessClose");
+    var successTitle = document.getElementById("rsvpSuccessTitle");
+    var successMain = document.getElementById("rsvpSuccessMain");
+    var successQrNote = document.getElementById("rsvpSuccessQrNote");
 
     function setStatus(message, type) {
         status.textContent = message;
         status.className = "form__status" + (type ? " " + type : "");
     }
 
-    function showSuccessModal() {
+    function showSuccessModal(attending) {
         if (!successModal) return;
+        var isDeclining = attending === "Regretfully declines";
+        if (successTitle) {
+            successTitle.textContent = isDeclining ? "We\u2019ll miss you!" : "Thank you!";
+        }
+        if (successMain) {
+            successMain.textContent = isDeclining
+                ? "Thank you for letting us know. We\u2019re sorry you won\u2019t be able to join us, and we truly appreciate you taking the time to respond."
+                : "Your RSVP has been received.";
+        }
+        if (successQrNote) {
+            successQrNote.hidden = isDeclining;
+        }
         successModal.hidden = false;
         // Force reflow so the appear transition runs.
         void successModal.offsetWidth;
@@ -465,10 +510,14 @@
 
     if (successClose) successClose.addEventListener("click", hideSuccessModal);
     if (successBackdrop) successBackdrop.addEventListener("click", hideSuccessModal);
-    document.addEventListener("keydown", function (e) {
+    function onSuccessKeydown(e) {
         if (e.key === "Escape" && successModal && !successModal.hidden) {
             hideSuccessModal();
         }
+    }
+    document.addEventListener("keydown", onSuccessKeydown);
+    window.__onCleanup(function () {
+        document.removeEventListener("keydown", onSuccessKeydown);
     });
 
     if (form) {
@@ -523,7 +572,7 @@
                     form.reset();
                     setStatus("", "");
                     if (rsvpSection) rsvpSection.hidden = true;
-                    showSuccessModal();
+                    showSuccessModal(payload.attending);
                 })
                 .catch(function () {
                     setStatus(
@@ -567,10 +616,14 @@
     openBtn.addEventListener("click", showModal);
     if (closeBtn) closeBtn.addEventListener("click", hideModal);
     if (backdrop) backdrop.addEventListener("click", hideModal);
-    document.addEventListener("keydown", function (e) {
+    function onGiftKeydown(e) {
         if (e.key === "Escape" && !modal.hidden) {
             hideModal();
         }
+    }
+    document.addEventListener("keydown", onGiftKeydown);
+    window.__onCleanup(function () {
+        document.removeEventListener("keydown", onGiftKeydown);
     });
 })();
 
@@ -585,6 +638,11 @@
     var speed = 0.35; // px per animation frame — very slow
     var paused = false;
     var resumeTimer;
+    var stopped = false;
+    window.__onCleanup(function () {
+        stopped = true;
+        clearTimeout(resumeTimer);
+    });
 
     function pause() {
         paused = true;
@@ -600,6 +658,7 @@
     wrap.addEventListener("wheel",      pause, { passive: true });
 
     function tick() {
+        if (stopped) return;
         if (!paused) {
             var max = wrap.scrollWidth - wrap.clientWidth;
             if (max > 0) {
@@ -622,6 +681,10 @@
  * ================================================================ */
 (function () {
     "use strict";
+    // Runs once for the life of the document — the seamless router keeps the
+    // same document alive across pages, so the gate must not re-initialize.
+    if (window.__pwBooted) return;
+    window.__pwBooted = true;
     var cfg         = window.WEDDING_CONFIG || {};
     var pwGate      = document.getElementById("pwGate");
     var pwForm      = document.getElementById("pwForm");
@@ -714,6 +777,10 @@
  * ================================================================ */
 (function () {
     "use strict";
+    // Runs once for the life of the document. The seamless router keeps this
+    // <audio> element alive across page swaps, so re-running would reset it.
+    if (window.__musicBooted) return;
+    window.__musicBooted = true;
     var cfg        = window.WEDDING_CONFIG || {};
     var musicUrl   = (cfg.bgMusicUrl || "").trim();
     var bgMusic    = document.getElementById("bgMusic");
@@ -729,7 +796,7 @@
     // is available at load time is used to pick up right where guests left off.
     var STORE_TIME   = "nj_music_time";
     var STORE_PAUSED = "nj_music_userPaused";
-    var INTERNAL_PAGES = ["index.html", "love-story.html", "entourage.html"];
+    var INTERNAL_PAGES = ["index.html", "love-story.html", "entourage.html", "hotel-rates.html"];
 
     function getStore(key, fallback) {
         try {
@@ -822,11 +889,21 @@
     // position/state right before the browser navigates, so the next page
     // can pick it up from the URL even if storage isn't shared (e.g. file://).
     document.addEventListener("click", function (e) {
+        // When the seamless router is active it keeps this audio element alive
+        // across pages, so the URL relay is unnecessary — leave links untouched.
+        if (window.__njRouterBooted) return;
         var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
         if (!a || (a.target && a.target !== "" && a.target !== "_self")) return;
 
+        var hrefAttr = a.getAttribute("href") || "";
+        // Same-page hash links (nav/scroll indicator anchors) never cause a
+        // reload, so leave them alone — stamping query params here would
+        // turn an in-page jump into a full page navigation, sending the
+        // guest back to the top instead of scrolling to the section.
+        if (hrefAttr.charAt(0) === "#") return;
+
         var url;
-        try { url = new URL(a.getAttribute("href"), location.href); } catch (err) { return; }
+        try { url = new URL(hrefAttr, location.href); } catch (err) { return; }
         if (url.origin !== location.origin) return;
 
         var page = url.pathname.split("/").pop() || "index.html";
@@ -866,5 +943,163 @@
     var alreadyUnlocked = false;
     try { alreadyUnlocked = sessionStorage.getItem("nj_unlocked") === "1"; } catch (e) {}
     if ((!gateEnabled || alreadyUnlocked || cameFromInternalNav) && !userPaused) setTimeout(doPlay, 300);
+})();
+
+/* ================================================================
+ *  SEAMLESS NAVIGATION (single-page routing for our own pages)
+ * ----------------------------------------------------------------
+ *  Clicking a link to another page on this site normally reloads
+ *  the whole document, which destroys the <audio> element and
+ *  restarts the music (mobile browsers then block auto-resume).
+ *  Instead we fetch the target page and swap its content into the
+ *  live document while keeping the same #bgMusic element playing —
+ *  so the background music is truly gapless from page to page.
+ * ================================================================ */
+(function () {
+    "use strict";
+    if (window.__njRouterBooted) return;
+    window.__njRouterBooted = true;
+
+    // Only these same-origin pages are handled in-place. checkin.html is a
+    // standalone coordinator tool and is intentionally excluded.
+    var INTERNAL = ["index.html", "love-story.html", "entourage.html", "hotel-rates.html"];
+    var PERSIST_IDS = ["bgMusic", "musicBtn"];
+
+    function pageName(u) {
+        return u.pathname.split("/").pop() || "index.html";
+    }
+    function isInternal(u) {
+        return u.origin === location.origin && INTERNAL.indexOf(pageName(u)) !== -1;
+    }
+    function isUnlocked() {
+        try { return sessionStorage.getItem("nj_unlocked") === "1"; } catch (e) { return false; }
+    }
+
+    document.addEventListener("click", function (e) {
+        if (e.defaultPrevented) return;
+        // Let modified clicks (new tab/window, middle-click) behave normally.
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+        var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+        if (!a || a.hasAttribute("download")) return;
+        var t = a.getAttribute("target");
+        if (t && t !== "" && t !== "_self") return;
+
+        var hrefAttr = a.getAttribute("href") || "";
+        if (hrefAttr.charAt(0) === "#") return; // in-page anchor — native scroll
+
+        var url;
+        try { url = new URL(hrefAttr, location.href); } catch (err) { return; }
+        if (!isInternal(url)) return; // external link — let the browser handle it
+
+        // Drop any leftover music-relay params so the address bar stays clean.
+        url.searchParams.delete("bgt");
+        url.searchParams.delete("bgp");
+
+        e.preventDefault();
+        go(url, true);
+    });
+
+    window.addEventListener("popstate", function () {
+        go(new URL(location.href), false);
+    });
+
+    var navToken = 0;
+    // Pathname of the content currently rendered in the document. We can't rely
+    // on location.pathname here: during popstate the browser has already moved
+    // it to the destination, which would make history navigations look "same
+    // page" and skip the content swap.
+    var currentPath = location.pathname;
+
+    function go(url, push) {
+        // Same document, just a different section — scroll instead of swapping.
+        if (url.pathname === currentPath) {
+            if (push) history.pushState(null, "", url.href);
+            scrollToTarget(url.hash);
+            return;
+        }
+
+        var token = ++navToken;
+        document.documentElement.classList.add("is-navigating");
+
+        fetch(url.href, { credentials: "same-origin" })
+            .then(function (res) { return res.text(); })
+            .then(function (html) {
+                if (token !== navToken) return; // superseded by a newer click
+                swap(html, url, push);
+            })
+            .catch(function () {
+                window.location.href = url.href; // network hiccup — hard navigate
+            });
+    }
+
+    function swap(html, url, push) {
+        var doc = new DOMParser().parseFromString(html, "text/html");
+
+        // An unauthenticated guest reaching a gated page can't be unlocked in
+        // place (the gate module only runs once) — fall back to a full load so
+        // the password gate initializes normally.
+        if (!isUnlocked() && doc.body.querySelector("#pwGate")) {
+            window.location.href = url.href;
+            return;
+        }
+
+        // Dispose the outgoing page's timers, loops, observers and listeners.
+        (window.__njCleanups || []).forEach(function (fn) {
+            try { fn(); } catch (e) {}
+        });
+        window.__njCleanups = [];
+
+        // Detach the live audio + music button so they keep playing untouched;
+        // a detached HTMLMediaElement continues playback while JS holds a ref.
+        var persisted = PERSIST_IDS
+            .map(function (id) { return document.getElementById(id); })
+            .filter(Boolean);
+        persisted.forEach(function (n) { n.parentNode && n.parentNode.removeChild(n); });
+
+        // Remove the incoming page's own copies so we don't duplicate them,
+        // its inert <script> tags (we re-run main.js ourselves), and — since
+        // we're already unlocked here — any password gate it ships with.
+        PERSIST_IDS.forEach(function (id) {
+            var n = doc.body.querySelector("#" + id);
+            if (n) n.parentNode.removeChild(n);
+        });
+        Array.prototype.forEach.call(doc.body.querySelectorAll("script"), function (s) {
+            s.parentNode.removeChild(s);
+        });
+        var gate = doc.body.querySelector("#pwGate");
+        if (gate) gate.parentNode.removeChild(gate);
+
+        document.title = doc.title;
+        document.body.className = doc.body.className;
+        document.body.style.overflow = "";
+        document.body.style.top = "";
+        document.body.innerHTML = doc.body.innerHTML;
+        persisted.forEach(function (n) { document.body.appendChild(n); });
+
+        if (push) history.pushState(null, "", url.href);
+        currentPath = url.pathname;
+        document.documentElement.classList.remove("is-navigating");
+
+        reinit();
+        scrollToTarget(url.hash);
+    }
+
+    function scrollToTarget(hash) {
+        if (hash && hash.length > 1) {
+            var el = document.getElementById(decodeURIComponent(hash.slice(1)));
+            if (el) { el.scrollIntoView(); return; }
+        }
+        window.scrollTo(0, 0);
+    }
+
+    // Re-execute this script so every per-page module re-binds to the swapped
+    // DOM. The music, password and router modules are guarded and skip re-runs.
+    function reinit() {
+        var s = document.createElement("script");
+        s.src = "js/main.js";
+        s.onload = function () { s.parentNode && s.parentNode.removeChild(s); };
+        document.body.appendChild(s);
+    }
 })();
 
