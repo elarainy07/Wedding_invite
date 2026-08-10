@@ -109,5 +109,25 @@ window.WEDDING_CONFIG = {
     messagesApi: {
         url: "https://script.google.com/macros/s/AKfycbzNawltDJHHztVGMs4Xyr8p6kPPG5uLpZWoibeyt6PsDvPtIko4NKDCBZxEBq4wxIWH/exec",
     },
+
+    /* -------------------------------------------------------
+     *  GUEST CHECK-IN (reception QR scanner) — coordinator tool
+     * -------------------------------------------------------
+     *  Powers checkin.html, the private page your wedding
+     *  coordinator opens on a phone to scan each guest's QR code
+     *  at the reception. It looks the guest up in the Google Sheet
+     *  and marks them arrived. Backed by the SAME Apps Script web
+     *  app + Sheet as everything above — set this to the identical
+     *  URL. It reads/writes a "Guests" tab (see the README,
+     *  "Guest check-in (QR scanner)" section).
+     *
+     *  The coordinator PIN itself is NEVER stored here. It lives
+     *  server-side as the CHECKIN_PIN Script Property, just like
+     *  SITE_PASSWORD. Set checkinApi.url to "" to disable the
+     *  check-in page.
+     * ----------------------------------------------------- */
+    checkinApi: {
+        url: "https://script.google.com/macros/s/AKfycbzNawltDJHHztVGMs4Xyr8p6kPPG5uLpZWoibeyt6PsDvPtIko4NKDCBZxEBq4wxIWH/exec",
+    },
 };
 
