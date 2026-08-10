@@ -427,7 +427,7 @@
         <div class="form__group">
             <label for="email">Email <span aria-hidden="true">*</span></label>
             <input type="email" id="email" name="email" required autocomplete="email" placeholder="your@email.com" />
-            <p class="form__hint">We&#8217;ll email your RSVP confirmation &amp; QR code here to present at reception registration &mdash; expect it about a week before the wedding, so please use an active email address.</p>
+            <p class="form__hint">We&#8217;ll email your RSVP confirmation &amp; QR code in this email to present at reception registration &mdash; expect it about a week before the wedding, so please use an active email address.</p>
         </div>
         <div class="form__group">
             <label for="attending">Will you attend? <span aria-hidden="true">*</span></label>
@@ -438,17 +438,18 @@
             </select>
         </div>
         <div class="form__group">
-            <label for="flightHelp">Flying in from overseas?</label>
+            <label for="flightHelp">Flying in from overseas? Need help finding a flight?</label>
             <select id="flightHelp" name="flightHelp">
                 <option value="" selected>N/A &mdash; I&#8217;m local</option>
                 <option value="Yes, please help me find a cheap flight">Yes, I&#8217;d love help finding a cheap flight</option>
-                <option value="No thanks, my flight is sorted">No thanks, I&#8217;ve got my flight sorted</option>
+                <option value="No thanks, my flight is sorted">No, I&#8217;m flying in but my flight is sorted</option>
             </select>
             <p class="form__hint">Jude&#8217;s a pro at hunting down cheap flights! Pick &#8220;Yes&#8221; above and he&#8217;ll get an email to help you out.</p>
         </div>
         <div class="form__group">
             <label for="message">Message to the Couple <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-hearts"></use></svg></label>
             <textarea id="message" name="message" rows="4" placeholder="Share your wishes and love for Jude &amp; Nica&hellip;"></textarea>
+            <p class="form__hint">Optional &mdash; if you leave a note, it&#8217;ll appear on the Messages for the Couple wall below for everyone to see.</p>
         </div>
         <button type="submit" class="btn btn--dark btn--full" id="rsvpSubmit">Send RSVP <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-envelope"></use></svg></button>
         <p class="rsvp__note"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-warning"></use></svg> Please note that failure to respond by the deadline will be considered as <strong>not attending</strong>, and your reserved seat will be offered to another guest. We appreciate your prompt response!</p>
@@ -462,7 +463,8 @@
     <div class="rsvp-modal__box">
         <svg class="icon rsvp-modal__icon" aria-hidden="true"><use href="img/icons.svg#icon-hearts"></use></svg>
         <h3 class="rsvp-modal__title" id="rsvpSuccessTitle">Thank you!</h3>
-        <p class="rsvp-modal__text">Your RSVP has been received.</p>
+        <p class="rsvp-modal__text" id="rsvpSuccessMain">Your RSVP has been received.</p>
+        <p class="rsvp-modal__text" id="rsvpSuccessQrNote">We&#8217;ll email your RSVP confirmation &amp; QR code to present at reception registration to the email address you entered &mdash; expect it about a week before the wedding.</p>
         <button type="button" class="btn btn--dark rsvp-modal__close" id="rsvpSuccessClose">Close</button>
     </div>
 </div>

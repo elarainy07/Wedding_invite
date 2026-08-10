@@ -49,6 +49,9 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior: smooth; }
 
+/* Brief dim while the seamless router swaps in a new page's content. */
+html.is-navigating body { opacity:.55; transition:opacity .12s ease; }
+
 /* ---- Icon utility (inline SVGs from img/icons.svg) ---- */
 .icon {
     width:1em; height:1em; display:inline-block; flex-shrink:0;
