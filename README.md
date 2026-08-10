@@ -246,10 +246,17 @@ Google Sheet, no hardware scanner or app install needed. It's backed by the
 same Apps Script web app; just set `checkinApi.url` in `js/config.js` to the
 same `/exec` URL as everything else.
 
-### 8a. Add a `Guests` tab to the Sheet
+### 8a. Create a separate Guests spreadsheet
 
-Create a tab named **`Guests`** with these column headers in row 1 (the order
-matters — the script reads by position):
+The `Guests` tab lives in its **own Google Sheet**, separate from the RSVPs/
+Messages Sheet. That way you can share it directly with your coordinator
+(edit access, if you want them adding seats/notes themselves) without giving
+them access to guest RSVP messages.
+
+1. Create a new, blank Google Sheet (e.g. name it "Wedding Guests &
+   Check-in").
+2. Rename its first tab to **`Guests`** with these column headers in row 1
+   (the order matters — the script reads by position):
 
 | GuestID | First Name | Last Name | Email | Group | Seat | Note | CheckedIn | CheckInTime | QR Sent |
 | ------- | ---------- | --------- | ----- | ----- | ---- | ---- | --------- | ----------- | ------- |
@@ -269,6 +276,41 @@ matters — the script reads by position):
 
 You can build this tab from your confirmed **RSVPs** rows after the RSVP
 deadline (copy names/emails over, then add IDs, seats, groups and notes).
+
+3. Open the new Sheet's URL and copy its **spreadsheet ID** — the long string
+   between `/d/` and `/edit`, e.g.
+   `https://docs.google.com/spreadsheets/d/`**`1AbC...xyz`**`/edit`.
+4. Paste that ID into `GUESTS_SPREADSHEET_ID` in the Apps Script (added in
+   [8c](#8c-add-the-check-in-logic-to-the-same-apps-script) below). The Apps
+   Script project itself stays attached to (or standalone alongside) the
+   original RSVP/Messages Sheet — it just opens the Guests Sheet by ID.
+5. If your coordinator needs to edit seats/notes/groups directly, share this
+   new Sheet with them (**Share** → their email → **Editor**). They don't
+   need any access to the RSVP/Messages Sheet.
+
+> ⚠️ **Don't generate GuestID with a formula like
+> `="g_"&ROW()&"_"&RANDBETWEEN(100000,999999)`.** `RANDBETWEEN` is volatile —
+> it recalculates (and produces a *new* random number) on every edit anywhere
+> in the spreadsheet or whenever the sheet is reopened. That silently changes
+> the ID after it's already been baked into an emailed QR code, so the
+> scanner reports "not on the guest list" for a guest who genuinely RSVP'd.
+> Use the formula once to generate an ID, then immediately freeze the whole
+> column to plain text by running this from the Apps Script editor:
+>
+> ```javascript
+> function freezeGuestIds() {
+>   const sheet = getGuestsSheet();
+>   const last = sheet.getLastRow();
+>   if (last < 2) return;
+>   const range = sheet.getRange(2, GUEST_COLS.id, last - 1, 1);
+>   range.setValues(range.getValues()); // evaluate formulas once, write back as static text
+> }
+> ```
+>
+> Run `freezeGuestIds` **before** `emailGuestQRCodes`, and again any time you
+> add new rows with the formula. If a QR was already emailed before freezing
+> and no longer matches, clear that guest's `CheckedIn`, `CheckInTime` and
+> `QR Sent` cells and re-run `emailGuestQRCodes` to resend a corrected QR.
 
 ### 8b. Set the coordinator PIN
 
@@ -303,12 +345,30 @@ final `return saveRsvp(data);` line):
 Then paste these helper functions into the same script:
 
 ```javascript
+// Spreadsheet ID of the separate Guests Sheet (from its URL, between /d/ and /edit).
+const GUESTS_SPREADSHEET_ID = "PASTE_YOUR_GUESTS_SHEET_ID_HERE";
 const GUESTS_SHEET_NAME = "Guests";
 // Column order in the Guests tab (1-based).
 const GUEST_COLS = {
   id: 1, first: 2, last: 3, email: 4,
   group: 5, seat: 6, note: 7, checkedIn: 8, checkInTime: 9, qrSent: 10,
 };
+// NOTE: GUEST_COLS must include qrSent: 10 or emailGuestQRCodes()
+// throws "getRange (number,null)" when it reads/writes that column.
+
+// Opens the Guests tab in the separate Guests spreadsheet (not the RSVP/Messages one).
+function getGuestsSheet() {
+  const ss = SpreadsheetApp.openById(GUESTS_SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(GUESTS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(GUESTS_SHEET_NAME);
+    sheet.appendRow([
+      "GuestID", "First Name", "Last Name", "Email",
+      "Group", "Seat", "Note", "CheckedIn", "CheckInTime", "QR Sent",
+    ]);
+  }
+  return sheet;
+}
 
 function checkinPinOk(candidate) {
   const real = PropertiesService.getScriptProperties().getProperty("CHECKIN_PIN") || "";
@@ -326,8 +386,7 @@ function findGuestRow(sheet, id) {
 }
 
 function lookupGuest(id) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
-  if (!sheet) return { found: false };
+  const sheet = getGuestsSheet();
   const row = findGuestRow(sheet, id);
   if (row === -1) return { found: false };
 
@@ -349,8 +408,7 @@ function lookupGuest(id) {
 }
 
 function checkinGuest(id) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
-  if (!sheet) return { ok: false };
+  const sheet = getGuestsSheet();
   const row = findGuestRow(sheet, id);
   if (row === -1) return { ok: false };
 
@@ -389,7 +447,7 @@ function emailGuestQRCodes() {
   // that so the run ends cleanly instead of crashing.
   const BATCH_LIMIT = 190;
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
+  const sheet = getGuestsSheet();
   const last = sheet.getLastRow();
   let sent = 0;
 
