@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Guest Check-in &#8212; Jude &amp; Nica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg:         #fef9fb;
+            --card:       #ffffff;
+            --ink:        #3b1f38;
+            --muted:      #9c7a8b;
+            --line:       #f0d0e8;
+            --royal:      #b06aa0;
+            --royal-dark: #7a4070;
+            --rose:       #e8a0c0;
+            --rose-light: #f9d5e8;
+            --green:      #1a6e48;
+            --green-bg:   #edfaf3;
+            --amber:      #a86b10;
+            --amber-bg:   #fdf6e6;
+            --red:        #b03050;
+            --red-bg:     #fdeef2;
+            --shadow:     0 12px 40px rgba(60,20,70,0.12);
+            --radius:     18px;
+            --serif:      "Cinzel", Georgia, serif;
+            --sans:       "Quicksand", system-ui, sans-serif;
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: var(--sans);
+            color: var(--ink);
+            background: linear-gradient(160deg, #fef9fb 0%, #fce8f5 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrap { max-width: 520px; margin: 0 auto; padding: 20px 18px 48px; }
+
+        header.app-head { text-align: center; padding: 18px 0 12px; }
+        .app-head h1 {
+            font-family: var(--serif); font-weight: 600;
+            font-size: 1.35rem; color: var(--royal-dark);
+            letter-spacing: .02em;
+        }
+        .app-head p { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+
+        /* ---- Cards ---- */
+        .card {
+            background: var(--card); border-radius: var(--radius);
+            box-shadow: var(--shadow); padding: 22px; margin-top: 18px;
+        }
+        .hidden { display: none !important; }
+
+        /* ---- Buttons ---- */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px; width: 100%; border: none; cursor: pointer;
+            font-family: var(--sans); font-weight: 600; font-size: 1rem;
+            padding: 14px 18px; border-radius: 12px;
+            transition: transform .12s ease, box-shadow .2s, opacity .2s;
+        }
+        .btn:active { transform: scale(.98); }
+        .btn:disabled { opacity: .55; cursor: not-allowed; }
+        .btn--primary { background: var(--royal); color: #fff; box-shadow: 0 6px 18px rgba(176,106,160,.35); }
+        .btn--green   { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(26,110,72,.30); }
+        .btn--ghost   { background: transparent; color: var(--royal-dark); border: 1.5px solid var(--line); }
+        .btn + .btn { margin-top: 10px; }
+
+        /* ---- PIN gate ---- */
+        .pin__label { display:block; text-align:center; color: var(--muted); font-size:.9rem; margin-bottom: 14px; }
+        .pin__input {
+            width: 100%; text-align: center; letter-spacing: .5em;
+            font-family: var(--sans); font-size: 1.5rem; font-weight: 600;
+            padding: 14px; border: 1.5px solid var(--line); border-radius: 12px;
+            color: var(--ink); background: #fff; margin-bottom: 14px;
+        }
+        .pin__input:focus { outline: none; border-color: var(--royal); }
+        .msg { text-align:center; font-size:.88rem; margin-top: 12px; min-height: 1.2em; }
+        .msg--error { color: var(--red); }
+        .msg--ok { color: var(--green); }
+
+        /* ---- Scanner ---- */
+        #reader { width: 100%; border-radius: 14px; overflow: hidden; }
+        #reader video { border-radius: 14px; display:block; width:100% !important; }
+        .scan-hint { text-align:center; color: var(--muted); font-size:.85rem; margin-top: 12px; }
+        .scan-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+        .scan-toolbar .stat { font-size:.82rem; color: var(--muted); }
+        .scan-toolbar .stat b { color: var(--green); }
+        .link-btn { background:none; border:none; color: var(--royal); font-family:var(--sans); font-weight:600; font-size:.85rem; cursor:pointer; padding:4px; }
+
+        /* ---- Guest result card ---- */
+        .result__status {
+            text-align:center; font-family:var(--serif); font-weight:600;
+            font-size:1.05rem; padding:10px; border-radius:12px; margin-bottom: 16px;
+        }
+        .result__status--new     { background: var(--green-bg); color: var(--green); }
+        .result__status--dupe    { background: var(--amber-bg); color: var(--amber); }
+        .result__status--missing { background: var(--red-bg);   color: var(--red); }
+
+        .guest-name {
+            font-family: var(--serif); font-weight: 600; font-size: 1.5rem;
+            text-align: center; color: var(--royal-dark); line-height: 1.25;
+        }
+        .badge {
+            display:inline-block; margin: 10px auto 0; text-align:center;
+            background: var(--rose-light); color: var(--royal-dark);
+            font-size:.78rem; font-weight:600; letter-spacing:.03em;
+            padding: 5px 14px; border-radius: 999px;
+        }
+        .center { text-align:center; }
+
+        .info-row { display:flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+        .info-row:first-of-type { border-top: none; }
+        .info-row .k { flex: 0 0 96px; color: var(--muted); font-size:.82rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding-top: 2px; }
+        .info-row .v { flex: 1; font-size: 1rem; font-weight: 500; }
+        .info-rows { margin: 18px 0; }
+
+        .seat-big { font-size: 1.6rem; font-weight: 700; color: var(--royal-dark); font-family: var(--serif); }
+
+        .note {
+            background: #fdf4fa; border-left: 3px solid var(--rose);
+            border-radius: 8px; padding: 12px 14px; margin-bottom: 18px;
+            font-size: .95rem; font-style: italic; color: var(--ink);
+        }
+        .note .note__label { display:block; font-style:normal; font-weight:600; color: var(--royal-dark); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; margin-bottom: 4px; }
+
+        .spinner {
+            display:inline-block; width: 18px; height: 18px;
+            border: 2.5px solid rgba(255,255,255,.4); border-top-color:#fff;
+            border-radius: 50%; animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .foot-note { text-align:center; color: var(--muted); font-size:.75rem; margin-top: 22px; line-height:1.5; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header class="app-head">
+        <h1>Guest Check-in</h1>
+        <p>Reception registration &#8212; Jude &amp; Nica</p>
+    </header>
+
+    <!-- COORDINATOR PIN GATE -->
+    <section class="card" id="pinGate">
+        <label class="pin__label" for="pinInput">Enter the coordinator PIN to begin</label>
+        <form id="pinForm" novalidate>
+            <input
+                id="pinInput"
+                class="pin__input"
+                type="password"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="&bull; &bull; &bull; &bull;"
+                aria-label="Coordinator PIN"
+                required
+            />
+            <button type="submit" class="btn btn--primary" id="pinBtn">Unlock</button>
+        </form>
+        <p class="msg msg--error" id="pinMsg" role="alert" aria-live="polite"></p>
+    </section>
+
+    <!-- SCANNER -->
+    <section class="card hidden" id="scanCard">
+        <div class="scan-toolbar">
+            <span class="stat">Checked in: <b id="countLabel">0</b></span>
+            <button type="button" class="link-btn" id="lockBtn">Lock</button>
+        </div>
+        <div id="reader"></div>
+        <p class="scan-hint" id="scanHint">Point the camera at the guest's QR code&hellip;</p>
+    </section>
+
+    <!-- GUEST RESULT -->
+    <section class="card hidden" id="resultCard">
+        <div class="result__status" id="resultStatus"></div>
+        <div id="resultBody"></div>
+        <button type="button" class="btn btn--green" id="confirmBtn">
+            <span id="confirmLabel">Confirm arrived</span>
+        </button>
+        <button type="button" class="btn btn--ghost" id="scanNextBtn">Scan next guest</button>
+    </section>
+
+    <p class="foot-note">
+        Private coordinator tool. Keep this link and PIN confidential.<br />
+        Camera runs entirely on this device &#8212; nothing is recorded.
+    </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/checkin.js"></script>
+</body>
+</html>

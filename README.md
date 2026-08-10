@@ -19,10 +19,12 @@ No build step and no dependencies — just static HTML, CSS, and vanilla JS.
 ```
 claude_weedding/
 ├── index.html        # Page markup
+├── checkin.html      # Private coordinator QR check-in page (not linked from the site)
 ├── css/style.css     # All styling
 └── js/
     ├── config.js     # ← Edit this: names, dates, venue, Apps Script URLs
-    └── main.js       # Countdown, animations, calendar + RSVP logic
+    ├── main.js       # Countdown, animations, calendar + RSVP logic
+    └── checkin.js    # Reception QR scanner (camera + lookup/check-in)
 ```
 
 ## Quick start
@@ -232,6 +234,229 @@ note to everyone who visits the site, newest first, in a scrollable block.
 It's powered by the same Apps Script + Sheet set up in
 [step 3](#3-connect-rsvp-messages--password-one-google-apps-script--sheet) —
 there's nothing extra to deploy here.
+
+## 8. Guest check-in (QR scanner)
+
+`checkin.html` is a **private, coordinator-only** page (not linked from the
+guest site) for the reception registration desk. Your coordinator opens it on
+a phone, enters a PIN, then uses the phone camera to scan each guest's QR
+code. The page shows the guest's name, group, seat and the couple's note, with
+a **Confirm arrived** button that marks them checked in — all in the same
+Google Sheet, no hardware scanner or app install needed. It's backed by the
+same Apps Script web app; just set `checkinApi.url` in `js/config.js` to the
+same `/exec` URL as everything else.
+
+### 8a. Add a `Guests` tab to the Sheet
+
+Create a tab named **`Guests`** with these column headers in row 1 (the order
+matters — the script reads by position):
+
+| GuestID | First Name | Last Name | Email | Group | Seat | Note | CheckedIn | CheckInTime | QR Sent |
+| ------- | ---------- | --------- | ----- | ----- | ---- | ---- | --------- | ----------- | ------- |
+
+- **GuestID** — a random, opaque token per guest (e.g. `g_8f3a1c…`). This is
+  what gets encoded in the QR code. Never use the guest's name/email as the ID,
+  and don't use sequential numbers (so a stray QR photo can't be guessed or
+  incremented into someone else's record).
+- **Group** — e.g. `Family`, `College Friends`, `HS Friends`, `Work`,
+  `Entourage` (free text; shown as a badge).
+- **Seat** — table/seat label shown large on screen.
+- **Note** — a short line from the couple shown to the coordinator.
+- **CheckedIn** / **CheckInTime** — leave blank; the scanner fills these in.
+- **QR Sent** — leave blank; `emailGuestQRCodes` (below) marks it once that
+  guest's QR email goes out, so re-running the function never double-emails
+  anyone.
+
+You can build this tab from your confirmed **RSVPs** rows after the RSVP
+deadline (copy names/emails over, then add IDs, seats, groups and notes).
+
+### 8b. Set the coordinator PIN
+
+Like the site password, the check-in PIN is verified server-side and never
+ships in the repo:
+
+1. In the same Apps Script project: **Project Settings** (gear) → **Script
+   Properties** → **Add script property** → name `CHECKIN_PIN`, value = a PIN
+   you give only to your coordinator.
+2. Redeploy with a **New version** (**Deploy → Manage deployments** → edit →
+   New version) so the change goes live on the same URL.
+
+### 8c. Add the check-in logic to the same Apps Script
+
+Route the three new actions in `doPost` (add these `if` blocks **above** the
+final `return saveRsvp(data);` line):
+
+```javascript
+   if (data.action === "checkinAuth") {
+     return jsonResponse({ ok: checkinPinOk(data.pin) });
+   }
+
+   if (data.action === "lookup") {
+     return jsonResponse(lookupGuest(data.id));
+   }
+
+   if (data.action === "checkin") {
+     return jsonResponse(checkinGuest(data.id));
+   }
+```
+
+Then paste these helper functions into the same script:
+
+```javascript
+const GUESTS_SHEET_NAME = "Guests";
+// Column order in the Guests tab (1-based).
+const GUEST_COLS = {
+  id: 1, first: 2, last: 3, email: 4,
+  group: 5, seat: 6, note: 7, checkedIn: 8, checkInTime: 9, qrSent: 10,
+};
+
+function checkinPinOk(candidate) {
+  const real = PropertiesService.getScriptProperties().getProperty("CHECKIN_PIN") || "";
+  return !!real && (candidate || "").toString() === real;
+}
+
+function findGuestRow(sheet, id) {
+  const wanted = (id || "").toString().trim();
+  if (!wanted) return -1;
+  const ids = sheet.getRange(2, GUEST_COLS.id, Math.max(sheet.getLastRow() - 1, 0), 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if ((ids[i][0] || "").toString().trim() === wanted) return i + 2; // 1-based, skip header
+  }
+  return -1;
+}
+
+function lookupGuest(id) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
+  if (!sheet) return { found: false };
+  const row = findGuestRow(sheet, id);
+  if (row === -1) return { found: false };
+
+  const values = sheet.getRange(row, 1, 1, 9).getValues()[0];
+  return {
+    found: true,
+    firstName: values[GUEST_COLS.first - 1],
+    lastName:  values[GUEST_COLS.last - 1],
+    email:     values[GUEST_COLS.email - 1],
+    group:     values[GUEST_COLS.group - 1],
+    seat:      values[GUEST_COLS.seat - 1],
+    note:      values[GUEST_COLS.note - 1],
+    checkedIn: !!values[GUEST_COLS.checkedIn - 1],
+    checkInTime: values[GUEST_COLS.checkInTime - 1]
+      ? Utilities.formatDate(new Date(values[GUEST_COLS.checkInTime - 1]),
+          "Asia/Manila", "h:mm a")
+      : "",
+  };
+}
+
+function checkinGuest(id) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
+  if (!sheet) return { ok: false };
+  const row = findGuestRow(sheet, id);
+  if (row === -1) return { ok: false };
+
+  const already = !!sheet.getRange(row, GUEST_COLS.checkedIn).getValue();
+  if (!already) {
+    const now = new Date();
+    sheet.getRange(row, GUEST_COLS.checkedIn).setValue(true);
+    sheet.getRange(row, GUEST_COLS.checkInTime).setValue(now);
+    return {
+      ok: true, alreadyCheckedIn: false,
+      checkInTime: Utilities.formatDate(now, "Asia/Manila", "h:mm a"),
+    };
+  }
+  const prev = sheet.getRange(row, GUEST_COLS.checkInTime).getValue();
+  return {
+    ok: true, alreadyCheckedIn: true,
+    checkInTime: prev ? Utilities.formatDate(new Date(prev), "Asia/Manila", "h:mm a") : "",
+  };
+}
+```
+
+Redeploy a **New version** so the endpoints go live.
+
+### 8d. Generate & email each guest their QR code
+
+Once the `Guests` tab is filled in (IDs + emails), run this function from the
+Apps Script editor (select `emailGuestQRCodes` in the toolbar → **Run**,
+authorize when prompted). It creates a QR image encoding each guest's
+`GuestID` and emails it to them:
+
+```javascript
+function emailGuestQRCodes() {
+  // 190 covers the full guest list in one run on a Workspace account
+  // (1,500/day quota). On personal @gmail.com (100/day), Apps Script
+  // stops mid-run once the quota is hit — the try/catch below catches
+  // that so the run ends cleanly instead of crashing.
+  const BATCH_LIMIT = 190;
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
+  const last = sheet.getLastRow();
+  let sent = 0;
+
+  for (let row = 2; row <= last && sent < BATCH_LIMIT; row++) {
+    const id      = (sheet.getRange(row, GUEST_COLS.id).getValue() || "").toString().trim();
+    const email   = (sheet.getRange(row, GUEST_COLS.email).getValue() || "").toString().trim();
+    const first   = (sheet.getRange(row, GUEST_COLS.first).getValue() || "").toString().trim();
+    const qrSent  = sheet.getRange(row, GUEST_COLS.qrSent).getValue();
+    if (!id || !email || qrSent) continue; // skip incomplete rows + already-emailed guests
+
+    // Render the QR as a PNG via a public QR image endpoint.
+    const url = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" +
+      encodeURIComponent(id);
+    const qrPng = UrlFetchApp.fetch(url).getBlob().setName("wedding-checkin-qr.png");
+
+    try {
+      MailApp.sendEmail({
+        to: email,
+        subject: "Your wedding check-in QR code — Jude & Nica",
+        htmlBody:
+          "<p>Hi " + first + ",</p>" +
+          "<p>Your RSVP is confirmed — we can't wait to celebrate with you!</p>" +
+          "<p><b>Saturday, January 23, 2027</b><br>" +
+          "Ceremony: 3:00 PM — San Antonio de Padua Chapel, Tagaytay City, Cavite<br>" +
+          "Reception: 7:30 PM — Alta D&#39; Tagaytay, Tagaytay City, Cavite</p>" +
+          "<p>Please <b>save the attached QR code</b> and show it at the reception " +
+          "registration desk so we can check you in quickly.</p>" +
+          "<p>With love,<br>Jude &amp; Nica</p>",
+        attachments: [qrPng],
+      });
+    } catch (err) {
+      // Daily email quota reached — stop here, already-sent guests stay
+      // marked, and the rest go out next time the function is run.
+      Logger.log("Stopped after " + sent + " emails: " + err.message);
+      return;
+    }
+
+    sheet.getRange(row, GUEST_COLS.qrSent).setValue(true);
+    sent++;
+    Utilities.sleep(300); // be gentle on quotas
+  }
+
+  Logger.log("Sent " + sent + " QR emails this run.");
+}
+```
+
+> Update the date/venue/time lines above if these ever change — they're
+> plain text in the script, not pulled from `js/config.js` (Apps Script
+> can't read that file).
+
+**Quotas:** personal `@gmail.com` accounts get **100 email recipients/day**;
+Google Workspace accounts get 1,500/day. On a Workspace account, one run
+sends all ~190 guests. On personal Gmail, the run stops itself cleanly
+around 100 (via the `try/catch`) and marks each sent guest `QR Sent`; just
+**run the function again the next day** (quota resets daily) to send the
+rest — already-sent guests are skipped automatically. Check your remaining
+quota anytime by running `Logger.log(MailApp.getRemainingDailyQuota())` in
+the editor.
+
+### 8e. Use it on the day
+
+Deploy the site (below), open `checkin.html` on the coordinator's phone (e.g.
+`https://your-site/checkin.html`), enter the PIN, allow camera access, and
+scan away. The **Checked in** counter and every guest's `CheckedIn` /
+`CheckInTime` update live in the Sheet, so you can watch arrivals from a laptop
+too. Because the page is never linked from the guest invitation, only people
+with the URL **and** the PIN can use it.
 
 ## Deploy
 
