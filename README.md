@@ -65,19 +65,46 @@ Form needed.
 
    ```javascript
    const SHEET_NAME = "RSVPs";
+   const FLIGHT_HELP_EMAIL = "judeaeddrian@gmail.com";
+   const FLIGHT_HELP_YES = "Yes, please help me find a cheap flight";
 
    function doPost(e) {
      const data = JSON.parse(e.postData.contents);
+     const flightHelp = (data.flightHelp || "").toString().trim();
+
      getSheet().appendRow([
        new Date(),
        (data.firstname || "").toString().trim(),
        (data.lastname || "").toString().trim(),
        (data.email || "").toString().trim(),
        (data.attending || "").toString().trim(),
-       (data.flightHelp || "").toString().trim(),
+       flightHelp,
        (data.message || "").toString().trim(),
      ]);
+
+     if (flightHelp === FLIGHT_HELP_YES) {
+       notifyJude(data);
+     }
+
      return jsonResponse({ ok: true });
+   }
+
+   function notifyJude(data) {
+     const name = [
+       (data.firstname || "").toString().trim(),
+       (data.lastname || "").toString().trim(),
+     ]
+       .filter(Boolean)
+       .join(" ") || "A guest";
+     const email = (data.email || "").toString().trim() || "not provided";
+
+     MailApp.sendEmail({
+       to: FLIGHT_HELP_EMAIL,
+       subject: "Flight help requested: " + name,
+       body:
+         name + " would like help finding a cheap flight for the wedding.\n\n" +
+         "Guest email: " + email,
+     });
    }
 
    function getSheet() {

@@ -68,7 +68,7 @@ window.WEDDING_CONFIG = {
      *  silently.
      * ----------------------------------------------------- */
     rsvpApi: {
-        url: "https://script.google.com/macros/s/AKfycbzHDBIMDBsGPciSPVChZmCymbMCx4DxmsH3rrk2xs383LKCnpP7eMpa__oLxwWLWWDqvA/exec",
+        url: "https://script.google.com/macros/s/AKfycbwRIFLpMAagSwHAavIg7aM-iWmridURS96LU-z4vSf1YncLfJnn4xttx46dFQSADaTpHA/exec",
     },
 
     /* -------------------------------------------------------

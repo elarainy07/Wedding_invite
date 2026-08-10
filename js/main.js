@@ -631,8 +631,16 @@
     if (!pwGate) return;
 
     function unlockSite() {
+        // Dismiss the mobile keyboard first — on iOS/Android, focusing the
+        // password input can silently scroll the page behind the fixed
+        // overlay, so we force the hero section back into view on unlock.
+        if (pwInput) pwInput.blur();
         pwGate.classList.add("pw-gate--hidden");
         document.body.style.overflow = "";
+        window.scrollTo(0, 0);
+        // The keyboard-dismiss animation on mobile can re-settle the scroll
+        // position a moment later, so reassert it once more after it closes.
+        setTimeout(function () { window.scrollTo(0, 0); }, 350);
         try { sessionStorage.setItem("nj_unlocked", "ok:" + sitePass); } catch (e) {}
         window.dispatchEvent(new CustomEvent("siteUnlocked"));
     }
