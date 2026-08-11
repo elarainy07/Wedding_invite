@@ -31,6 +31,11 @@
     --gold:        #e8c07a;
     --gold-dark:   #c4924a;
 
+    /* Dreamy fairytale gradient — soft pastel rainbow used on the hero,
+       subpage headers and the password gate, so every "cover" screen
+       reads as one consistent whimsical wash instead of a dark night sky. */
+    --dream-gradient: linear-gradient(160deg, #ffe3ef 0%, #ffe9d8 22%, #fff8d6 40%, #ddf5e6 58%, #dbeafb 76%, #ecdffa 100%);
+
     /* Shadows */
     --shadow:      0 16px 50px rgba(60,20,70,0.10);
     --shadow-sm:   0 6px 20px rgba(60,20,70,0.07);
@@ -76,42 +81,39 @@ img { max-width:100%; display:block; }
     padding: 10px 32px;
 }
 .nav__logo-placeholder {
-    font-family:var(--script); font-size:2rem; color:var(--white); line-height:1; transition:color .3s;
+    font-family:var(--script); font-size:2rem; color:var(--royal-dark); line-height:1; transition:color .3s;
 }
 .nav.scrolled .nav__logo-placeholder { color:var(--royal); }
-.nav__logo-img { height:64px; width:auto; transition:filter .3s; }
-/* Dark hero: invert black monogram to white */
-.nav:not(.scrolled) .nav__logo-img { filter:invert(1); }
-/* Light nav: keep original black monogram */
-.nav.scrolled .nav__logo-img  { filter:none; }
+.nav__logo-img { height:64px; width:auto; transition:filter .3s; filter:brightness(0) invert(1) drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+.nav.scrolled .nav__logo-img { filter:none; }
 .nav__brand { text-decoration:none; line-height:1; }
 .nav__links { list-style:none; display:flex; gap:18px; }
 .nav__links a {
-    text-decoration:none; color:rgba(255,255,255,0.9);
+    text-decoration:none; color:rgba(255,255,255,0.92); text-shadow:0 2px 8px rgba(0,0,0,.55);
     font-size:0.67rem; letter-spacing:0.12em; text-transform:uppercase; font-weight:600;
     transition:color .25s;
 }
-.nav.scrolled .nav__links a { color:var(--ink); }
-.nav__links a:hover { color:var(--c-pink); }
+.nav.scrolled .nav__links a { color:var(--ink); text-shadow:none; }
+.nav__links a:hover { color:var(--rose-light); }
 .nav.scrolled .nav__links a:hover { color:var(--royal); }
 /* Section indicator in nav */
 .nav__section-label {
     font-family:var(--serif); font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
-    color:rgba(255,255,255,0.85); white-space:nowrap;
+    color:rgba(255,255,255,0.92); text-shadow:0 2px 8px rgba(0,0,0,.55); white-space:nowrap;
     opacity:0; transform:translateY(-6px);
     transition:opacity .4s, transform .4s, color .3s;
     pointer-events:none;
 }
-.nav.scrolled .nav__section-label { color:var(--royal); }
+.nav.scrolled .nav__section-label { color:var(--royal); text-shadow:none; }
 .nav__section-label.visible { opacity:1; transform:translateY(0); }
 
 /* Active nav link */
-.nav__links a.active { color:var(--c-pink) !important; }
+.nav__links a.active { color:#fff !important; }
 .nav.scrolled .nav__links a.active { color:var(--royal) !important; font-weight:700; }
 
 .nav__toggle { display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:6px; }
-.nav__toggle span { width:26px; height:2px; background:var(--white); border-radius:2px; transition:.3s; }
-.nav.scrolled .nav__toggle span { background:var(--ink); }
+.nav__toggle span { width:26px; height:2px; background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.5); transition:.3s; }
+.nav.scrolled .nav__toggle span { background:var(--ink); box-shadow:none; }
 
 /* ================================================================
    HERO
@@ -119,32 +121,37 @@ img { max-width:100%; display:block; }
 .hero {
     position:relative; min-height:100vh;
     display:flex; align-items:center; justify-content:center;
-    text-align:center; color:var(--white); overflow:hidden;
-    background: linear-gradient(160deg, #4a1878 0%, #8f4baa 28%, #c87ab8 55%, #f0a0c8 78%, #ffd5e8 100%);
+    text-align:center; color:var(--royal-dark); overflow:hidden;
+    background: var(--dream-gradient);
+}
+.hero::before {
+    content:""; position:absolute; inset:0; z-index:0;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center center / cover no-repeat fixed;
+    opacity:.22; mix-blend-mode:multiply; pointer-events:none;
 }
 .hero__stars {
-    position:absolute; inset:0; opacity:.7; animation:twinkle 4s ease-in-out infinite alternate;
+    position:absolute; inset:0; opacity:.6; animation:twinkle 4s ease-in-out infinite alternate;
     background-image:
-        radial-gradient(2px 2px at 10% 20%,#fff,transparent),
-        radial-gradient(2px 2px at 80% 10%,#fff,transparent),
-        radial-gradient(1.5px 1.5px at 30% 60%,rgba(255,255,255,.8),transparent),
-        radial-gradient(2px 2px at 60% 35%,#fff,transparent),
-        radial-gradient(1.5px 1.5px at 90% 70%,rgba(255,255,255,.7),transparent),
-        radial-gradient(2px 2px at 45% 85%,#fff,transparent),
-        radial-gradient(1.5px 1.5px at 15% 45%,rgba(255,255,255,.9),transparent),
-        radial-gradient(2px 2px at 70% 25%,#fff,transparent),
-        radial-gradient(1.5px 1.5px at 25% 90%,rgba(255,255,255,.8),transparent),
-        radial-gradient(2px 2px at 95% 45%,#fff,transparent),
-        radial-gradient(1.5px 1.5px at 50% 15%,rgba(255,255,255,.9),transparent),
-        radial-gradient(2px 2px at 35% 75%,#fff,transparent);
+        radial-gradient(2px 2px at 10% 20%,rgba(176,106,160,.55),transparent),
+        radial-gradient(2px 2px at 80% 10%,rgba(176,106,160,.55),transparent),
+        radial-gradient(1.5px 1.5px at 30% 60%,rgba(176,106,160,.45),transparent),
+        radial-gradient(2px 2px at 60% 35%,rgba(176,106,160,.55),transparent),
+        radial-gradient(1.5px 1.5px at 90% 70%,rgba(176,106,160,.4),transparent),
+        radial-gradient(2px 2px at 45% 85%,rgba(176,106,160,.55),transparent),
+        radial-gradient(1.5px 1.5px at 15% 45%,rgba(176,106,160,.5),transparent),
+        radial-gradient(2px 2px at 70% 25%,rgba(176,106,160,.55),transparent),
+        radial-gradient(1.5px 1.5px at 25% 90%,rgba(176,106,160,.45),transparent),
+        radial-gradient(2px 2px at 95% 45%,rgba(176,106,160,.55),transparent),
+        radial-gradient(1.5px 1.5px at 50% 15%,rgba(176,106,160,.5),transparent),
+        radial-gradient(2px 2px at 35% 75%,rgba(176,106,160,.55),transparent);
     background-repeat:repeat;
 }
 .hero__bg-photo { position:absolute; inset:0; z-index:0; }
 .hero__bg-placeholder {
     width:100%; height:100%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:12px; border:3px dashed rgba(255,255,255,.35);
-    color:rgba(255,255,255,.6); font-size:.9rem; letter-spacing:.1em;
+    gap:12px; border:3px dashed rgba(122,64,112,.3);
+    color:rgba(122,64,112,.55); font-size:.9rem; letter-spacing:.1em;
 }
 .hero__bg-placeholder span {
     display:inline-block; width:3rem; height:3rem; opacity:.7;
@@ -154,28 +161,48 @@ img { max-width:100%; display:block; }
 }
 .hero__photo-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .hero__overlay {
-    position:absolute; inset:0; z-index:1;
-    background: linear-gradient(to bottom, rgba(74,24,120,.28) 0%, rgba(42,16,56,.55) 100%);
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    /* Darken the sky/castle and garden-path bands for text contrast, keep the
+       middle band (where the couple stands) clear so their faces stay visible. */
+    background: linear-gradient(to bottom,
+        rgba(30,12,32,.55) 0%,
+        rgba(30,12,32,.22) 18%,
+        rgba(30,12,32,0) 36%,
+        rgba(30,12,32,0) 58%,
+        rgba(30,12,32,.28) 74%,
+        rgba(30,12,32,.5) 88%,
+        rgba(30,12,32,.7) 100%);
 }
-.hero__content { position:relative; z-index:2; padding:0 20px; animation:fadeUp 1.2s ease both; }
-.hero__eyebrow { letter-spacing:.3em; font-size:.9rem; margin-bottom:18px; color:var(--rose-light); font-weight:500; }
+.hero__content {
+    position:relative; z-index:2; width:100%; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+    padding:112px 20px 100px; animation:fadeUp 1.2s ease both;
+}
+.hero__top, .hero__bottom { display:flex; flex-direction:column; align-items:center; width:100%; }
+.hero__eyebrow {
+    letter-spacing:.3em; font-size:.95rem; margin-bottom:18px; color:#fff; font-weight:600;
+    text-shadow:0 2px 6px rgba(0,0,0,.7), 0 0 18px rgba(0,0,0,.5);
+}
 .hero__names {
     font-family:var(--script); font-size:clamp(4rem,13vw,9rem); font-weight:400;
-    line-height:1; margin-bottom:10px; color:var(--white);
-    text-shadow:0 4px 30px rgba(0,0,0,.3), 0 0 50px rgba(232,160,192,.4);
+    line-height:1; margin-bottom:10px; color:#fff;
+    text-shadow:0 3px 10px rgba(0,0,0,.6), 0 6px 34px rgba(0,0,0,.5), 0 0 60px rgba(0,0,0,.35);
 }
 .hero__names span { display:inline-block; margin:0 6px; font-size:.6em; vertical-align:middle; color:var(--rose-light); }
-.hero__tagline { font-family:var(--serif); font-size:clamp(1.1rem,3vw,1.6rem); font-style:italic; letter-spacing:.06em; margin-bottom:30px; opacity:.9; }
-.hero__date { display:flex; flex-direction:column; gap:4px; margin-bottom:42px; font-size:.8rem; letter-spacing:.25em; text-transform:uppercase; }
-.hero__date-main { font-family:var(--serif); font-size:1.6rem; letter-spacing:.08em; text-transform:none; margin:6px 0; color:var(--rose-light); }
+.hero__tagline {
+    font-family:var(--serif); font-size:clamp(1.15rem,3vw,1.7rem); font-style:italic; letter-spacing:.08em; opacity:1; color:#fff; font-weight:500;
+    text-shadow:0 2px 8px rgba(0,0,0,.7), 0 0 20px rgba(0,0,0,.5);
+}
+.hero__date { display:flex; flex-direction:column; gap:6px; margin-bottom:28px; font-size:.85rem; letter-spacing:.25em; text-transform:uppercase; color:#fff; font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8), 0 0 18px rgba(0,0,0,.6); }
+.hero__date-main { font-family:var(--serif); font-size:1.7rem; letter-spacing:.08em; text-transform:none; margin:6px 0; color:var(--gold); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 22px rgba(0,0,0,.7); }
 .hero__floral { position:absolute; bottom:0; left:0; width:100%; z-index:2; line-height:0; }
 .hero__floral svg { display:block; width:100%; height:80px; }
 
 .hero__scroll {
     display:flex; flex-direction:column; align-items:center; gap:8px;
-    width:fit-content; margin:44px auto 0;
-    color:rgba(255,255,255,.85); text-decoration:none;
-    font-size:.68rem; letter-spacing:.22em; text-transform:uppercase;
+    width:fit-content; margin:20px auto 0;
+    color:#fff; text-decoration:none; text-shadow:0 2px 8px rgba(0,0,0,.75), 0 0 16px rgba(0,0,0,.55);
+    font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; font-weight:600;
     animation:hero-scroll-fade-up 1.6s ease both;
 }
 .hero__scroll-mouse {
@@ -187,7 +214,7 @@ img { max-width:100%; display:block; }
     animation:hero-scroll-wheel 1.8s ease infinite;
 }
 .hero__scroll-chevron {
-    width:9px; height:9px; border-right:2px solid rgba(255,255,255,.75); border-bottom:2px solid rgba(255,255,255,.75);
+    width:9px; height:9px; border-right:2px solid rgba(255,255,255,.8); border-bottom:2px solid rgba(255,255,255,.8);
     transform:rotate(45deg); animation:hero-scroll-bounce 1.8s ease infinite;
 }
 @keyframes hero-scroll-fade-up {
@@ -210,15 +237,20 @@ img { max-width:100%; display:block; }
 .subpage-hero {
     position:relative; min-height:46vh; padding:140px 24px 60px;
     display:flex; align-items:center; justify-content:center;
-    text-align:center; color:var(--white); overflow:hidden;
-    background: linear-gradient(160deg, #4a1878 0%, #8f4baa 28%, #c87ab8 55%, #f0a0c8 78%, #ffd5e8 100%);
+    text-align:center; color:var(--royal-dark); overflow:hidden;
+    background: var(--dream-gradient);
+}
+.subpage-hero::before {
+    content:""; position:absolute; inset:0; z-index:0;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center / cover no-repeat;
+    opacity:.22; mix-blend-mode:multiply; pointer-events:none;
 }
 .subpage-hero__content { position:relative; z-index:2; animation:fadeUp 1.2s ease both; }
-.subpage-hero__eyebrow { letter-spacing:.3em; font-size:.85rem; margin-bottom:14px; color:var(--rose-light); font-weight:500; text-transform:uppercase; }
+.subpage-hero__eyebrow { letter-spacing:.3em; font-size:.85rem; margin-bottom:14px; color:var(--rose-dark); font-weight:500; text-transform:uppercase; }
 .subpage-hero__title {
     font-family:var(--serif); font-size:clamp(2.4rem,6vw,3.6rem); font-weight:600;
-    line-height:1.1; margin-bottom:32px; color:var(--white);
-    text-shadow:0 4px 30px rgba(0,0,0,.3);
+    line-height:1.1; margin-bottom:32px; color:var(--royal-dark);
+    text-shadow:0 4px 26px rgba(255,255,255,.85);
 }
 
 /* ================================================================
@@ -238,6 +270,14 @@ img { max-width:100%; display:block; }
 .btn--dark:hover { background:linear-gradient(135deg,var(--royal-dark) 0%,#5c2f55 100%); }
 .btn--outline { background:transparent; color:var(--royal); border:2px solid var(--royal); padding:12px 30px; }
 .btn--outline:hover { background:var(--royal); color:var(--white); }
+.btn:disabled { opacity:.75; cursor:default; transform:none !important; }
+
+.spinner {
+    display:inline-block; width:16px; height:16px;
+    border:2.5px solid rgba(122,64,112,.35); border-top-color:currentColor;
+    border-radius:50%; animation:spin .7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
 .btn--full { width:100%; justify-content:center; padding:16px; }
 
 /* ================================================================
@@ -294,10 +334,13 @@ img { max-width:100%; display:block; }
 /* ================================================================
    OUR LOVE STORY  — white bg, colourful chapter tags
    ================================================================ */
-.story, .story-teaser { background:var(--bg); }
-.story { max-width:none; }
+.story { background:var(--bg); max-width:none; }
 
-/* Subtle watercolor garden background for the Love Story teaser — full-bleed, edge to edge */
+/* Love Story teaser — same treatment as the hero: dream-gradient base with the
+   watercolor photo multiply-blended on top, full-bleed edge to edge.
+   Both layers use the same full-bleed trick (the section itself is width-
+   capped by .section) and fixed attachment so neither leaves blank gutters
+   on the sides nor gets stretched thin across this tall section's height. */
 .story-teaser { position:relative; }
 .story-teaser::before {
     content:"";
@@ -306,12 +349,26 @@ img { max-width:100%; display:block; }
     left:50%;
     width:100vw;
     margin-left:-50vw;
-    background:url('../Pictures/BG/Dreamy_Garden_watercolor.png') center/cover no-repeat;
-    opacity:.2;
-    z-index:0;
+    background: var(--dream-gradient) fixed;
+    z-index:-1;
+    pointer-events:none;
+}
+.story-teaser::after {
+    content:"";
+    position:absolute;
+    top:0; bottom:0;
+    left:50%;
+    width:100vw;
+    margin-left:-50vw;
+    /* Fixed attachment keeps this framed the same as the hero's photo above it. */
+    background:url('../Pictures/BG/Dreamy_Garden_watercolor.png') center center / cover no-repeat fixed;
+    opacity:.15; mix-blend-mode:multiply;
+    z-index:-1;
     pointer-events:none;
 }
 .story-teaser > * { position:relative; z-index:1; }
+.story-teaser .section__sub { color:var(--royal-dark); }
+.story .section__head { max-width:1160px; margin-left:auto; margin-right:auto; }
 .story .section__head { max-width:1160px; margin-left:auto; margin-right:auto; }
 .story__timeline { max-width:1160px; margin-left:auto; margin-right:auto; }
 .story__timeline { display:flex; flex-direction:column; gap:80px; }
@@ -368,7 +425,7 @@ img { max-width:100%; display:block; }
 }
 .story-teaser__person { flex:1 1 220px; max-width:260px; text-align:center; }
 .story-teaser__name {
-    font-family:var(--serif); font-size:1.15rem; color:var(--royal-dark); margin-top:16px; line-height:1.4;
+    font-family:var(--serif); font-size:1.15rem; font-weight:700; color:var(--royal-dark); margin-top:16px; line-height:1.4;
 }
 .story-teaser__cta, .entourage-teaser__cta { text-align:center; margin-top:48px; }
 .entourage-teaser__photo { max-width:900px; margin:0 auto; }
@@ -767,20 +824,26 @@ body.modal-open { overflow:hidden; }
 .footer {
     position:relative; overflow:hidden;
     text-align:center; padding:72px 24px;
-    color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:12px;
+    color:var(--white); display:flex; flex-direction:column; align-items:center; gap:12px;
+    border-top:3px solid var(--c-violet);
 }
 .footer::before {
     content:""; position:absolute; inset:0; z-index:0;
-    background:url("../Pictures/Main_Page_buttom_BG.jpeg") bottom / cover no-repeat;
-    opacity:.15;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center / cover no-repeat;
+    opacity:.5;
+}
+.footer::after {
+    content:""; position:absolute; inset:0; z-index:1;
+    /* Translucent so the 50%-opacity floral layer beneath still reads through. */
+    background: linear-gradient(135deg, rgba(72,48,160,.82) 0%, rgba(122,64,112,.82) 100%);
 }
 .footer > * { position:relative; z-index:2; }
 .footer__flowers { font-size:1.2rem; letter-spacing:.5em; opacity:.7; }
-.footer__names { font-family:var(--script); font-size:3.2rem; color:var(--royal-dark); line-height:1; }
-.footer__date { letter-spacing:.22em; font-size:.78rem; text-transform:uppercase; color:var(--muted); }
+.footer__names { font-family:var(--script); font-size:3.2rem; color:var(--white); line-height:1; }
+.footer__date { letter-spacing:.22em; font-size:.78rem; text-transform:uppercase; color:rgba(255,255,255,.8); }
 /* Hashtags — match hero eyebrow style ("You are invited!") */
-.footer__hashtags { font-family:var(--sans); font-size:.82rem; font-weight:500; color:var(--rose-dark); letter-spacing:.28em; opacity:.95; }
-.footer__quote { font-family:var(--sans); font-size:.82rem; letter-spacing:.15em; color:var(--muted); margin-top:2px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.footer__hashtags { font-family:var(--sans); font-size:.82rem; font-weight:500; color:var(--rose-light); letter-spacing:.28em; opacity:.95; }
+.footer__quote { font-family:var(--sans); font-size:.82rem; letter-spacing:.15em; color:rgba(255,255,255,.8); margin-top:2px; display:flex; align-items:center; justify-content:center; gap:8px; }
 .footer__pokeball { height:1em; width:auto; object-fit:contain; vertical-align:middle; display:inline-block; }
 .subpage-footer__back { margin-bottom:14px; }
 
@@ -1021,7 +1084,7 @@ body.modal-open { overflow:hidden; }
     .section { padding:60px 16px; }
     .section__head { margin-bottom:36px; }
     .hero__date-main { font-size:1.35rem; }
-    .hero__content { padding:0 16px; }
+    .hero__content { padding:96px 16px 104px; }
     .countdown__items { gap:18px; }
     .countdown__item { min-width:60px; }
     .rsvp__form { padding:26px 18px; }
@@ -1039,16 +1102,21 @@ body.modal-open { overflow:hidden; }
     position:fixed; inset:0; z-index:9999;
     display:flex; align-items:center; justify-content:center;
     overflow:hidden;
-    background:linear-gradient(160deg,#4a1878 0%,#8f4baa 28%,#c87ab8 55%,#f0a0c8 78%,#ffd5e8 100%);
+    background: var(--dream-gradient);
     transition:opacity .6s ease, visibility .6s ease;
 }
 .pw-gate--hidden { opacity:0; visibility:hidden; pointer-events:none; }
+.pw-gate::before {
+    content:""; position:absolute; inset:0; z-index:0;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center / cover no-repeat;
+    opacity:.22; mix-blend-mode:multiply; pointer-events:none;
+}
 .pw-gate__bg { position:absolute; inset:0; z-index:0; }
 .pw-gate__bg-placeholder {
     width:100%; height:100%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:12px; border:3px dashed rgba(255,255,255,.35);
-    color:rgba(255,255,255,.6); font-size:.9rem; letter-spacing:.1em;
+    gap:12px; border:3px dashed rgba(122,64,112,.3);
+    color:rgba(122,64,112,.55); font-size:.9rem; letter-spacing:.1em;
 }
 .pw-gate__bg-placeholder span {
     display:inline-block; width:3rem; height:3rem; opacity:.7;
@@ -1059,53 +1127,53 @@ body.modal-open { overflow:hidden; }
 .pw-gate__bg-photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .pw-gate__overlay {
     position:absolute; inset:0; z-index:1;
-    background:linear-gradient(160deg,rgba(74,24,120,.6) 0%,rgba(143,75,170,.55) 28%,rgba(200,122,184,.5) 55%,rgba(240,160,200,.45) 78%,rgba(255,213,232,.4) 100%);
+    background:linear-gradient(160deg,rgba(255,255,255,.15) 0%,rgba(255,255,255,.5) 100%);
 }
 .pw-gate__stars {
-    position:absolute; inset:0; z-index:2; opacity:.6; animation:twinkle 4s ease-in-out infinite alternate;
+    position:absolute; inset:0; z-index:2; opacity:.55; animation:twinkle 4s ease-in-out infinite alternate;
     background-image:
-        radial-gradient(2px 2px at 10% 20%,#fff,transparent),
-        radial-gradient(2px 2px at 80% 10%,#fff,transparent),
-        radial-gradient(1.5px 1.5px at 30% 60%,rgba(255,255,255,.8),transparent),
-        radial-gradient(2px 2px at 60% 35%,#fff,transparent),
-        radial-gradient(2px 2px at 90% 70%,rgba(255,255,255,.7),transparent),
-        radial-gradient(2px 2px at 45% 85%,#fff,transparent),
-        radial-gradient(1.5px 1.5px at 15% 45%,rgba(255,255,255,.9),transparent),
-        radial-gradient(2px 2px at 70% 25%,#fff,transparent);
+        radial-gradient(2px 2px at 10% 20%,rgba(176,106,160,.6),transparent),
+        radial-gradient(2px 2px at 80% 10%,rgba(176,106,160,.6),transparent),
+        radial-gradient(1.5px 1.5px at 30% 60%,rgba(176,106,160,.45),transparent),
+        radial-gradient(2px 2px at 60% 35%,rgba(176,106,160,.6),transparent),
+        radial-gradient(2px 2px at 90% 70%,rgba(176,106,160,.4),transparent),
+        radial-gradient(2px 2px at 45% 85%,rgba(176,106,160,.6),transparent),
+        radial-gradient(1.5px 1.5px at 15% 45%,rgba(176,106,160,.5),transparent),
+        radial-gradient(2px 2px at 70% 25%,rgba(176,106,160,.6),transparent);
     background-repeat:repeat;
 }
 .pw-gate__card {
     position:relative; z-index:3;
-    background:rgba(255,255,255,.14); backdrop-filter:blur(16px);
-    border:1px solid rgba(255,255,255,.3); border-radius:24px;
+    background:rgba(255,255,255,.55); backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.7); border-radius:24px;
     padding:52px 44px; text-align:center;
     max-width:420px; width:90%;
-    box-shadow:0 24px 80px rgba(0,0,0,.3);
+    box-shadow:0 24px 80px rgba(122,64,112,.2);
     animation:fadeUp .8s ease both;
 }
-.pw-gate__logo { height:160px; width:auto; margin:0 auto 18px; filter:invert(1); }
+.pw-gate__logo { height:160px; width:auto; margin:0 auto 18px; }
 .pw-gate__date {
     font-size:.72rem; letter-spacing:.25em; text-transform:uppercase;
-    color:rgba(255,255,255,.72); margin-bottom:28px;
+    color:rgba(122,64,112,.75); margin-bottom:28px;
 }
 .pw-gate__label {
     font-family:var(--serif); font-style:italic; font-size:1rem;
-    color:rgba(255,255,255,.9); margin-bottom:20px;
+    color:var(--royal-dark); margin-bottom:20px;
 }
 .pw-gate__form { display:flex; flex-direction:column; gap:14px; }
 .pw-gate__input {
     font-family:var(--sans); font-size:1rem; text-align:center;
     padding:14px 20px; border-radius:var(--radius-full);
-    border:1.5px solid rgba(255,255,255,.45);
-    background:rgba(255,255,255,.14); color:var(--white);
+    border:1.5px solid rgba(122,64,112,.3);
+    background:rgba(255,255,255,.6); color:var(--ink);
     letter-spacing:.12em; outline:none;
     transition:border-color .25s, background .25s;
 }
-.pw-gate__input::placeholder { color:rgba(255,255,255,.5); letter-spacing:.08em; }
-.pw-gate__input:focus { border-color:var(--white); background:rgba(255,255,255,.22); }
+.pw-gate__input::placeholder { color:rgba(122,64,112,.45); letter-spacing:.08em; }
+.pw-gate__input:focus { border-color:var(--royal); background:rgba(255,255,255,.85); }
 .pw-gate__btn { align-self:center; min-width:160px; }
 .pw-gate__error {
-    font-size:.82rem; color:rgba(255,200,200,.92);
+    font-size:.82rem; color:var(--c-pink-d);
     min-height:1.4em; margin-top:4px; font-style:italic;
 }
 @keyframes pw-shake {

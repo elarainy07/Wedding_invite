@@ -160,7 +160,10 @@ window.__onCleanup = function (fn) {
                     }
                 });
             },
-            { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+            // threshold is intentionally low: it's a ratio of the target's own
+            // height, so tall elements (e.g. stacked columns on mobile) would
+            // otherwise need a huge scroll before becoming "visible enough".
+            { threshold: 0.01, rootMargin: "0px 0px -8% 0px" }
         );
         revealEls.forEach(function (el) {
             observer.observe(el);
@@ -730,10 +733,18 @@ window.__onCleanup = function (fn) {
         }
     }
 
+    var pwSubmitHtml = pwSubmit ? pwSubmit.innerHTML : "";
+
     function setChecking(isChecking) {
-        if (pwSubmit) pwSubmit.disabled = isChecking;
+        if (pwSubmit) {
+            pwSubmit.disabled = isChecking;
+            pwSubmit.innerHTML = isChecking
+                ? '<span class="spinner" aria-hidden="true"></span> Checking\u2026'
+                : pwSubmitHtml;
+        }
         if (pwInput) pwInput.disabled = isChecking;
     }
+
 
     if (pwForm) {
         pwForm.addEventListener("submit", function (e) {
@@ -881,8 +892,35 @@ window.__onCleanup = function (fn) {
     bgMusic.addEventListener("timeupdate", function () {
         setStore(STORE_TIME, String(bgMusic.currentTime));
     });
-    window.addEventListener("pagehide", function () {
-        setStore(STORE_TIME, String(bgMusic.currentTime));
+
+    // Mobile browsers keep playing background audio after the guest
+    // switches apps or locks the phone — treat that as "closing" the site:
+    // stop the music immediately rather than let it run unattended.
+    document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+            doPause(true);
+        } else if (!userPaused) {
+            var stillUnlocked = false;
+            try { stillUnlocked = sessionStorage.getItem("nj_unlocked") === "1"; } catch (e) {}
+            if (stillUnlocked) doPlay();
+        }
+    });
+
+    window.addEventListener("pagehide", function (e) {
+        if (e.persisted) {
+            // Page is going into the back/forward cache, not actually closing —
+            // keep the saved position so a same-tab restore can pick up cleanly.
+            setStore(STORE_TIME, String(bgMusic.currentTime));
+            return;
+        }
+        // A real close/navigation away: don't let the next visit resume
+        // mid-song or skip the password gate — start the site fresh.
+        try {
+            sessionStorage.removeItem(STORE_TIME);
+            sessionStorage.removeItem(STORE_PAUSED);
+            sessionStorage.removeItem("nj_unlocked");
+        } catch (err) {}
+        if (!bgMusic.paused) bgMusic.pause();
     });
 
     // Stamp any link to one of our own pages with the current playback

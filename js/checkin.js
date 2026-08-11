@@ -273,11 +273,11 @@
 
         resultBody.innerHTML = html;
 
-        confirmBtn.classList.remove("hidden");
-        confirmBtn.disabled = false;
         if (alreadyIn) {
-            confirmLabel.textContent = "Check in again";
+            confirmBtn.classList.add("hidden");
         } else {
+            confirmBtn.classList.remove("hidden");
+            confirmBtn.disabled = false;
             confirmLabel.textContent = "Confirm arrived";
         }
         scanNextBtn.classList.remove("hidden");
