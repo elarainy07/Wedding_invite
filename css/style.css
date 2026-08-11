@@ -126,7 +126,7 @@ img { max-width:100%; display:block; }
 }
 .hero::before {
     content:""; position:absolute; inset:0; z-index:0;
-    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center center / cover no-repeat fixed;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center center / cover no-repeat scroll;
     opacity:.22; mix-blend-mode:multiply; pointer-events:none;
 }
 .hero__stars {
@@ -195,8 +195,6 @@ img { max-width:100%; display:block; }
 }
 .hero__date { display:flex; flex-direction:column; gap:6px; margin-bottom:28px; font-size:.85rem; letter-spacing:.25em; text-transform:uppercase; color:#fff; font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8), 0 0 18px rgba(0,0,0,.6); }
 .hero__date-main { font-family:var(--serif); font-size:1.7rem; letter-spacing:.08em; text-transform:none; margin:6px 0; color:var(--gold); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 22px rgba(0,0,0,.7); }
-.hero__floral { position:absolute; bottom:0; left:0; width:100%; z-index:2; line-height:0; }
-.hero__floral svg { display:block; width:100%; height:80px; }
 
 .hero__scroll {
     display:flex; flex-direction:column; align-items:center; gap:8px;
@@ -246,6 +244,15 @@ img { max-width:100%; display:block; }
     opacity:.22; mix-blend-mode:multiply; pointer-events:none;
 }
 .subpage-hero__content { position:relative; z-index:2; animation:fadeUp 1.2s ease both; }
+
+/* Subpages (Love Story, Entourage, Discounted Room Rates) never show the nav
+   over a photo, so keep it dark/legible against the light gradient at all times. */
+body.subpage .nav__logo-img { filter:none; }
+body.subpage .nav__links a { color:rgba(122,64,112,0.85); text-shadow:none; }
+body.subpage .nav__links a:hover { color:var(--c-pink-d); }
+body.subpage .nav__links a.active { color:var(--c-pink-d) !important; }
+body.subpage .nav__section-label { color:rgba(122,64,112,0.85); text-shadow:none; }
+body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; }
 .subpage-hero__eyebrow { letter-spacing:.3em; font-size:.85rem; margin-bottom:14px; color:var(--rose-dark); font-weight:500; text-transform:uppercase; }
 .subpage-hero__title {
     font-family:var(--serif); font-size:clamp(2.4rem,6vw,3.6rem); font-weight:600;
@@ -349,7 +356,7 @@ img { max-width:100%; display:block; }
     left:50%;
     width:100vw;
     margin-left:-50vw;
-    background: var(--dream-gradient) fixed;
+    background: var(--dream-gradient);
     z-index:-1;
     pointer-events:none;
 }
@@ -360,8 +367,8 @@ img { max-width:100%; display:block; }
     left:50%;
     width:100vw;
     margin-left:-50vw;
-    /* Fixed attachment keeps this framed the same as the hero's photo above it. */
-    background:url('../Pictures/BG/Dreamy_Garden_watercolor.png') center center / cover no-repeat fixed;
+    /* Scroll attachment (not fixed) avoids the zoom/jump glitch in mobile in-app browsers. */
+    background:url('../Pictures/BG/Dreamy_Garden_watercolor.png') center center / cover no-repeat scroll;
     opacity:.15; mix-blend-mode:multiply;
     z-index:-1;
     pointer-events:none;
@@ -942,7 +949,6 @@ body.modal-open { overflow:hidden; }
 
 /* Subtle looping motion on decorative accents (all devices) */
 .section__title::after { animation:softPulse 3.2s ease-in-out infinite; }
-.hero__floral { animation:floatY 6s ease-in-out infinite; }
 
 /* Smooth transition defaults for interactive elements */
 .reminders__icon,
@@ -1054,10 +1060,12 @@ body.modal-open { overflow:hidden; }
     .reminders__grid { grid-template-columns:1fr; }
     .messages__wall { max-height:460px; padding:18px; }
     .prenup__photo { flex:0 0 240px; }
-    .hero__floral svg { height:50px; }
     .hero__scroll { margin-top:28px; }
 
     .story__album-photo { flex:0 0 160px; }
+    /* Narrow viewports crop the watercolor to a thin center strip via cover,
+       so bump opacity here to keep it visibly present on phones. */
+    .story-teaser::after { opacity:.32; }
     /* Tighter section heads + comfy reading spacing on phones */
     .section__head { margin-bottom:44px; }
     .countdown { padding:44px 20px; }
