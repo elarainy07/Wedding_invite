@@ -43,13 +43,14 @@
     var scanNextBtn  = document.getElementById("scanNextBtn");
 
     var UNLOCK_KEY = "nj_checkin_unlocked";
-    var COUNT_KEY  = "nj_checkin_count";
+    var COUNT_POLL_MS = 8000;    // how often to re-sync the shared count
 
     var scanner = null;          // Html5Qrcode instance
     var scanning = false;
     var currentGuestId = null;   // ID of the guest shown in the result card
     var lastScanned = "";        // debounce repeated frames of the same code
     var lastScanAt = 0;
+    var countTimer = null;       // interval handle for live count polling
 
     /* ============================================================
      *  Small helpers
@@ -73,13 +74,22 @@
     function show(el) { el.classList.remove("hidden"); }
     function hide(el) { el.classList.add("hidden"); }
 
-    function getCount() {
-        var n = parseInt(sessionStorage.getItem(COUNT_KEY) || "0", 10);
-        return isNaN(n) ? 0 : n;
+    // The checked-in total is shared across every coordinator's device, so it
+    // lives in the Google Sheet — not in this browser. We fetch it from the
+    // server and refresh it on a timer so all registration phones stay in sync.
+    function refreshCount() {
+        return postJson({ action: "checkinCount" })
+            .then(function (data) {
+                if (data && typeof data.count === "number") {
+                    countLabel.textContent = data.count;
+                }
+            })
+            .catch(function () { /* keep the last known number on a hiccup */ });
     }
-    function setCount(n) {
-        try { sessionStorage.setItem(COUNT_KEY, String(n)); } catch (e) {}
-        countLabel.textContent = n;
+
+    function startCountPolling() {
+        if (countTimer) return;
+        countTimer = setInterval(refreshCount, COUNT_POLL_MS);
     }
 
     /* ============================================================
@@ -145,7 +155,8 @@
     function enterScanner() {
         hide(pinGate);
         show(scanCard);
-        setCount(getCount());
+        refreshCount();
+        startCountPolling();
         startScanner();
     }
 
@@ -291,9 +302,7 @@
         postJson({ action: "checkin", id: currentGuestId })
             .then(function (data) {
                 if (data && data.ok) {
-                    if (!data.alreadyCheckedIn) {
-                        setCount(getCount() + 1);
-                    }
+                    refreshCount();
                     resultStatus.className = "result__status result__status--new";
                     resultStatus.textContent =
                         "\u2713 Checked in" + (data.checkInTime ? " \u00b7 " + data.checkInTime : "");

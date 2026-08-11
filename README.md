@@ -340,6 +340,10 @@ final `return saveRsvp(data);` line):
    if (data.action === "checkin") {
      return jsonResponse(checkinGuest(data.id));
    }
+
+   if (data.action === "checkinCount") {
+     return jsonResponse({ count: countCheckedIn() });
+   }
 ```
 
 Then paste these helper functions into the same script:
@@ -428,6 +432,20 @@ function checkinGuest(id) {
     checkInTime: prev ? Utilities.formatDate(new Date(prev), "Asia/Manila", "h:mm a") : "",
   };
 }
+
+// Shared checked-in total, read straight from the Sheet so every
+// coordinator's phone shows the same live number (see 8e).
+function countCheckedIn() {
+  const sheet = getGuestsSheet();
+  const last = sheet.getLastRow();
+  if (last < 2) return 0;
+  const flags = sheet.getRange(2, GUEST_COLS.checkedIn, last - 1, 1).getValues();
+  let n = 0;
+  for (let i = 0; i < flags.length; i++) {
+    if (flags[i][0]) n++;
+  }
+  return n;
+}
 ```
 
 Redeploy a **New version** so the endpoints go live.
@@ -513,8 +531,11 @@ Deploy the site (below), open `checkin.html` on the coordinator's phone (e.g.
 `https://your-site/checkin.html`), enter the PIN, allow camera access, and
 scan away. The **Checked in** counter and every guest's `CheckedIn` /
 `CheckInTime` update live in the Sheet, so you can watch arrivals from a laptop
-too. Because the page is never linked from the guest invitation, only people
-with the URL **and** the PIN can use it.
+too. The counter reads the shared total straight from the Sheet and re-syncs
+every few seconds, so multiple coordinators scanning at once all see the same
+accurate number in real time (and it stays correct if anyone closes and
+reopens the page). Because the page is never linked from the guest invitation,
+only people with the URL **and** the PIN can use it.
 
 ## Deploy
 
