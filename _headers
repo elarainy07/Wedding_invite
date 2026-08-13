@@ -1,0 +1,20 @@
+# Netlify caching rules — long-lived cache for static assets, no cache for HTML.
+# HTML must revalidate so guests always get the latest content.
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Images: cache for 1 year (rename the file if you ever change its contents).
+/Pictures/*
+  Cache-Control: public, max-age=31536000, immutable
+/img/*
+  Cache-Control: public, max-age=31536000, immutable
+/*.png
+  Cache-Control: public, max-age=31536000, immutable
+
+# Styles, scripts and audio: cache for 1 year.
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+/music/*
+  Cache-Control: public, max-age=31536000, immutable
