@@ -3,7 +3,7 @@
 A single-page, fully responsive, fairytale-themed wedding invitation with three
 Google integrations:
 
-- **Google Sheets (via Apps Script)** — the RSVP form and the Messages-for-the-Couple wall both post into one Google Sheet (separate tabs), through a single Apps Script web app.
+- **Google Sheets (via Apps Script)** — the RSVP form, the Messages-for-the-Couple wall, and the guest check-in list all live in **one Google Sheet** (separate tabs: `RSVPs`, `Messages`, `Guests`), through a single Apps Script web app.
 - **Google Maps** — an embedded venue map plus a one-tap "Get Directions" link.
 - **Google Calendar** — an "Add to Google Calendar" button pre-filled with the event details.
 
@@ -57,14 +57,16 @@ styled "coming soon" placeholder automatically.
 
 ## 3. Connect RSVP, Messages & Password (one Google Apps Script + Sheet)
 
-RSVPs, the Messages-for-the-Couple wall, and the password gate all share a
-**single Google Sheet** (two tabs: `RSVPs` and `Messages`) through **one
-small free Google Apps Script** web app — no Google Form, no extra sheet,
-no server needed.
+RSVPs, the Messages-for-the-Couple wall, the password gate, and the guest
+check-in list all share a **single Google Sheet** (three tabs: `RSVPs`,
+`Messages`, and `Guests`) through **one small free Google Apps Script** web
+app — no Google Form, no extra sheet, no server needed.
 
 1. Open the Google Sheet you want everything saved to (e.g. the one you
-   already created for this project). Both tabs are created automatically
-   the first time each is written to.
+   already created for this project). The `RSVPs` and `Messages` tabs are
+   created automatically the first time each is written to; the `Guests`
+   tab is created automatically too, but see [step 8a](#8a-add-a-guests-tab-to-the-same-spreadsheet)
+   before you rely on it — you'll want to fill it in with real guest rows.
 2. Open **Extensions → Apps Script**, delete any starter code, and paste in:
 
    ```javascript
@@ -246,17 +248,23 @@ Google Sheet, no hardware scanner or app install needed. It's backed by the
 same Apps Script web app; just set `checkinApi.url` in `js/config.js` to the
 same `/exec` URL as everything else.
 
-### 8a. Create a separate Guests spreadsheet
+### 8a. Add a `Guests` tab to the same spreadsheet
 
-The `Guests` tab lives in its **own Google Sheet**, separate from the RSVPs/
-Messages Sheet. That way you can share it directly with your coordinator
-(edit access, if you want them adding seats/notes themselves) without giving
-them access to guest RSVP messages.
+The `Guests` tab lives in the **same Google Sheet** as `RSVPs` and
+`Messages` — one spreadsheet, one Apps Script, one deployment URL for
+everything on the site. (If your coordinator only needs to scan QR codes,
+they don't need Sheet access at all — `checkin.html` + the PIN is all
+they use. Only give them **Editor** access to the whole spreadsheet if you
+want them editing seats/notes/groups directly in the Sheet, in which case
+they'll also be able to see the `RSVPs` and `Messages` tabs.)
 
-1. Create a new, blank Google Sheet (e.g. name it "Wedding Guests &
-   Check-in").
-2. Rename its first tab to **`Guests`** with these column headers in row 1
-   (the order matters — the script reads by position):
+1. In the same Google Sheet used for `RSVPs`/`Messages`, add a new tab and
+   rename it to **`Guests`** (it's also created automatically, with the
+   header row below, the first time the script writes to it — but create
+   it up front if you want to fill it in manually before the RSVP
+   deadline).
+2. Give it these column headers in row 1 (the order matters — the script
+   reads by position):
 
 | GuestID | First Name | Last Name | Email | Group | Seat | Note | CheckedIn | CheckInTime | QR Sent |
 | ------- | ---------- | --------- | ----- | ----- | ---- | ---- | --------- | ----------- | ------- |
@@ -275,18 +283,15 @@ them access to guest RSVP messages.
   anyone.
 
 You can build this tab from your confirmed **RSVPs** rows after the RSVP
-deadline (copy names/emails over, then add IDs, seats, groups and notes).
+deadline (copy names/emails over, then add IDs, seats, groups and notes) —
+just paste them into the `Guests` tab in the same spreadsheet, right next
+to `RSVPs` and `Messages`.
 
-3. Open the new Sheet's URL and copy its **spreadsheet ID** — the long string
-   between `/d/` and `/edit`, e.g.
-   `https://docs.google.com/spreadsheets/d/`**`1AbC...xyz`**`/edit`.
-4. Paste that ID into `GUESTS_SPREADSHEET_ID` in the Apps Script (added in
-   [8c](#8c-add-the-check-in-logic-to-the-same-apps-script) below). The Apps
-   Script project itself stays attached to (or standalone alongside) the
-   original RSVP/Messages Sheet — it just opens the Guests Sheet by ID.
-5. If your coordinator needs to edit seats/notes/groups directly, share this
-   new Sheet with them (**Share** → their email → **Editor**). They don't
-   need any access to the RSVP/Messages Sheet.
+> **Migrating from a previous separate Guests spreadsheet?** Open the old
+> Guests spreadsheet, select all its data (including the header row), copy
+> it, then paste it into the new `Guests` tab in the main spreadsheet. Once
+> confirmed, you can delete the old spreadsheet (or keep it as a backup) —
+> the Apps Script below no longer reads from it.
 
 > ⚠️ **Don't generate GuestID with a formula like
 > `="g_"&ROW()&"_"&RANDBETWEEN(100000,999999)`.** `RANDBETWEEN` is volatile —
@@ -325,7 +330,7 @@ ships in the repo:
 
 ### 8c. Add the check-in logic to the same Apps Script
 
-Route the three new actions in `doPost` (add these `if` blocks **above** the
+Route the check-in actions in `doPost` (add these `if` blocks **above** the
 final `return saveRsvp(data);` line):
 
 ```javascript
@@ -344,13 +349,15 @@ final `return saveRsvp(data);` line):
    if (data.action === "checkinCount") {
      return jsonResponse({ count: countCheckedIn() });
    }
+
+   if (data.action === "guestList") {
+     return jsonResponse({ guests: listGuests() });
+   }
 ```
 
 Then paste these helper functions into the same script:
 
 ```javascript
-// Spreadsheet ID of the separate Guests Sheet (from its URL, between /d/ and /edit).
-const GUESTS_SPREADSHEET_ID = "PASTE_YOUR_GUESTS_SHEET_ID_HERE";
 const GUESTS_SHEET_NAME = "Guests";
 // Column order in the Guests tab (1-based).
 const GUEST_COLS = {
@@ -360,18 +367,12 @@ const GUEST_COLS = {
 // NOTE: GUEST_COLS must include qrSent: 10 or emailGuestQRCodes()
 // throws "getRange (number,null)" when it reads/writes that column.
 
-// Opens the Guests tab in the separate Guests spreadsheet (not the RSVP/Messages one).
+// Opens the Guests tab in the same spreadsheet as RSVPs/Messages.
 function getGuestsSheet() {
-  const ss = SpreadsheetApp.openById(GUESTS_SPREADSHEET_ID);
-  let sheet = ss.getSheetByName(GUESTS_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(GUESTS_SHEET_NAME);
-    sheet.appendRow([
-      "GuestID", "First Name", "Last Name", "Email",
-      "Group", "Seat", "Note", "CheckedIn", "CheckInTime", "QR Sent",
-    ]);
-  }
-  return sheet;
+  return getSheet(GUESTS_SHEET_NAME, [
+    "GuestID", "First Name", "Last Name", "Email",
+    "Group", "Seat", "Note", "CheckedIn", "CheckInTime", "QR Sent",
+  ]);
 }
 
 function checkinPinOk(candidate) {
@@ -445,6 +446,29 @@ function countCheckedIn() {
     if (flags[i][0]) n++;
   }
   return n;
+}
+
+// Returns the whole guest list (name, group, seat, status) so the
+// coordinator page can show it and do manual check-ins by tapping a name.
+function listGuests() {
+  const sheet = getGuestsSheet();
+  const last = sheet.getLastRow();
+  if (last < 2) return [];
+  const rows = sheet.getRange(2, 1, last - 1, 9).getValues();
+  return rows
+    .filter(function (r) { return (r[GUEST_COLS.id - 1] || "").toString().trim(); })
+    .map(function (r) {
+      const t = r[GUEST_COLS.checkInTime - 1];
+      return {
+        id:        (r[GUEST_COLS.id - 1] || "").toString().trim(),
+        firstName: r[GUEST_COLS.first - 1],
+        lastName:  r[GUEST_COLS.last - 1],
+        group:     r[GUEST_COLS.group - 1],
+        seat:      r[GUEST_COLS.seat - 1],
+        checkedIn: !!r[GUEST_COLS.checkedIn - 1],
+        checkInTime: t ? Utilities.formatDate(new Date(t), "Asia/Manila", "h:mm a") : "",
+      };
+    });
 }
 ```
 

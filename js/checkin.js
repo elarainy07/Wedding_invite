@@ -34,6 +34,15 @@
     var scanHint   = document.getElementById("scanHint");
     var countLabel = document.getElementById("countLabel");
     var lockBtn    = document.getElementById("lockBtn");
+    var listBtn    = document.getElementById("listBtn");
+
+    var listCard        = document.getElementById("listCard");
+    var listCloseBtn    = document.getElementById("listCloseBtn");
+    var listSearch      = document.getElementById("listSearch");
+    var listCountLabel  = document.getElementById("listCountLabel");
+    var listTotalLabel  = document.getElementById("listTotalLabel");
+    var guestListEl     = document.getElementById("guestList");
+    var listFilters     = listCard ? listCard.querySelectorAll(".chip") : [];
 
     var resultCard   = document.getElementById("resultCard");
     var resultStatus = document.getElementById("resultStatus");
@@ -51,6 +60,10 @@
     var lastScanned = "";        // debounce repeated frames of the same code
     var lastScanAt = 0;
     var countTimer = null;       // interval handle for live count polling
+
+    var allGuests = [];          // full guest list, cached for search/filter
+    var listFilter = "all";      // "all" | "pending" | "in"
+    var listQuery = "";          // current search text
 
     /* ============================================================
      *  Small helpers
@@ -330,4 +343,141 @@
         scanHint.textContent = "Point the camera at the guest's QR code\u2026";
         resumeScanner();
     }
+
+    /* ============================================================
+     *  Guest list + manual check-in
+     * ========================================================== */
+    listBtn.addEventListener("click", openList);
+    listCloseBtn.addEventListener("click", closeList);
+
+    listSearch.addEventListener("input", function () {
+        listQuery = listSearch.value.trim().toLowerCase();
+        renderList();
+    });
+
+    Array.prototype.forEach.call(listFilters, function (chip) {
+        chip.addEventListener("click", function () {
+            listFilter = chip.getAttribute("data-filter") || "all";
+            Array.prototype.forEach.call(listFilters, function (c) {
+                c.classList.toggle("chip--active", c === chip);
+            });
+            renderList();
+        });
+    });
+
+    function openList() {
+        pauseScanner();
+        hide(scanCard);
+        show(listCard);
+        guestListEl.innerHTML =
+            '<p class="list-empty">Loading guest list\u2026</p>';
+        loadGuests();
+    }
+
+    function closeList() {
+        hide(listCard);
+        show(scanCard);
+        resumeScanner();
+    }
+
+    function loadGuests() {
+        postJson({ action: "guestList" })
+            .then(function (data) {
+                allGuests = (data && data.guests) || [];
+                renderList();
+            })
+            .catch(function () {
+                guestListEl.innerHTML =
+                    '<p class="list-empty">Couldn\'t load the guest list. Check your connection and try again.</p>';
+            });
+    }
+
+    function guestFullName(g) {
+        return [g.firstName, g.lastName].filter(Boolean).join(" ") || "Guest";
+    }
+
+    function renderList() {
+        var total = allGuests.length;
+        var checkedIn = 0;
+        for (var i = 0; i < total; i++) {
+            if (allGuests[i].checkedIn) checkedIn++;
+        }
+        listTotalLabel.textContent = total;
+        listCountLabel.textContent = checkedIn;
+
+        var rows = allGuests.filter(function (g) {
+            if (listFilter === "in" && !g.checkedIn) return false;
+            if (listFilter === "pending" && g.checkedIn) return false;
+            if (listQuery) {
+                var hay = [guestFullName(g), g.group, g.seat]
+                    .join(" ").toLowerCase();
+                if (hay.indexOf(listQuery) === -1) return false;
+            }
+            return true;
+        });
+
+        rows.sort(function (a, b) {
+            return guestFullName(a).localeCompare(guestFullName(b));
+        });
+
+        if (!rows.length) {
+            guestListEl.innerHTML =
+                '<p class="list-empty">No guests match your search.</p>';
+            return;
+        }
+
+        var html = "";
+        for (var j = 0; j < rows.length; j++) {
+            var g = rows[j];
+            var meta = [g.group, g.seat ? "Seat " + g.seat : ""]
+                .filter(Boolean).map(esc).join(" \u00b7 ");
+            html += '<div class="guest-item" data-id="' + esc(g.id) + '">';
+            html += '<div class="guest-item__info">';
+            html += '<div class="guest-item__name">' + esc(guestFullName(g)) + "</div>";
+            if (meta) html += '<div class="guest-item__meta">' + meta + "</div>";
+            html += "</div>";
+            if (g.checkedIn) {
+                html += '<span class="guest-item__status guest-item__status--in">' +
+                    "\u2713 In" + (g.checkInTime ? " \u00b7 " + esc(g.checkInTime) : "") +
+                    "</span>";
+            } else {
+                html += '<button type="button" class="btn btn--mini" data-checkin="' +
+                    esc(g.id) + '">Check in</button>';
+            }
+            html += "</div>";
+        }
+        guestListEl.innerHTML = html;
+    }
+
+    guestListEl.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-checkin]");
+        if (!btn) return;
+        var id = btn.getAttribute("data-checkin");
+        if (!id) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>';
+
+        postJson({ action: "checkin", id: id })
+            .then(function (data) {
+                if (data && data.ok) {
+                    for (var i = 0; i < allGuests.length; i++) {
+                        if (allGuests[i].id === id) {
+                            allGuests[i].checkedIn = true;
+                            allGuests[i].checkInTime = data.checkInTime || "";
+                            break;
+                        }
+                    }
+                    refreshCount();
+                    renderList();
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = "Try again";
+                }
+            })
+            .catch(function () {
+                btn.disabled = false;
+                btn.textContent = "Try again";
+            });
+    });
 })();
