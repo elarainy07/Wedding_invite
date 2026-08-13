@@ -3,8 +3,12 @@
  *  GUEST CHECK-IN — reception QR scanner (coordinator tool)
  * ------------------------------------------------------------
  *  Powers checkin.html. Flow:
- *    1. Coordinator enters a PIN (verified server-side against
- *       the CHECKIN_PIN Script Property — never stored here).
+ *    1. Coordinator enters a PIN, verified server-side against the
+ *       CHECKIN_PIN Script Property. It's kept in sessionStorage
+ *       (cleared on lock/tab close) and sent with every guest-data
+ *       request below, since the server re-checks it on each one —
+ *       checkinApi.url is public in js/config.js, so a client-side
+ *       "unlocked" flag alone can't gate access to guest data.
  *    2. The phone's rear camera scans a guest's QR code, which
  *       encodes only an opaque GuestID.
  *    3. We look that ID up in the Google Sheet "Guests" tab and
@@ -51,8 +55,9 @@
     var confirmLabel = document.getElementById("confirmLabel");
     var scanNextBtn  = document.getElementById("scanNextBtn");
 
-    var UNLOCK_KEY = "nj_checkin_unlocked";
+    var UNLOCK_KEY = "nj_checkin_pin";  // sessionStorage key holding the entered PIN itself
     var COUNT_POLL_MS = 8000;    // how often to re-sync the shared count
+    var GUEST_POLL_MS = 20000;   // how often to quietly refresh the cached roster
 
     var scanner = null;          // Html5Qrcode instance
     var scanning = false;
@@ -60,8 +65,10 @@
     var lastScanned = "";        // debounce repeated frames of the same code
     var lastScanAt = 0;
     var countTimer = null;       // interval handle for live count polling
+    var guestTimer = null;       // interval handle for background roster refresh
 
     var allGuests = [];          // full guest list, cached for search/filter
+    var guestIndex = {};         // id -> guest, for instant local lookup on scan
     var listFilter = "all";      // "all" | "pending" | "in"
     var listQuery = "";          // current search text
 
@@ -87,11 +94,37 @@
     function show(el) { el.classList.remove("hidden"); }
     function hide(el) { el.classList.add("hidden"); }
 
+    // The PIN itself (not just a boolean) is kept so every request below can
+    // prove it to the server — checkinApi.url is public in js/config.js, so
+    // the server must re-check the PIN on every guest-data action, not just
+    // trust that this page happened to show the scanner.
+    function storedPin() {
+        try { return sessionStorage.getItem(UNLOCK_KEY) || ""; } catch (e) { return ""; }
+    }
+
+    // Wraps postJson for actions that require the coordinator PIN.
+    function postSecure(payload) {
+        payload.pin = storedPin();
+        return postJson(payload).then(function (data) {
+            if (data && data.error === "unauthorized") {
+                forceRelock();
+            }
+            return data;
+        });
+    }
+
+    // The server rejected our stored PIN (changed, expired, or tampered
+    // sessionStorage) — send the coordinator back to the PIN gate.
+    function forceRelock() {
+        try { sessionStorage.removeItem(UNLOCK_KEY); } catch (e) {}
+        location.reload();
+    }
+
     // The checked-in total is shared across every coordinator's device, so it
     // lives in the Google Sheet — not in this browser. We fetch it from the
     // server and refresh it on a timer so all registration phones stay in sync.
     function refreshCount() {
-        return postJson({ action: "checkinCount" })
+        return postSecure({ action: "checkinCount" })
             .then(function (data) {
                 if (data && typeof data.count === "number") {
                     countLabel.textContent = data.count;
@@ -105,6 +138,13 @@
         countTimer = setInterval(refreshCount, COUNT_POLL_MS);
     }
 
+    // Keeps the local roster (used for instant scan lookups and the guest
+    // list view) reasonably fresh across multiple coordinator devices.
+    function startGuestPolling() {
+        if (guestTimer) return;
+        guestTimer = setInterval(loadGuests, GUEST_POLL_MS);
+    }
+
     /* ============================================================
      *  PIN gate
      * ========================================================== */
@@ -116,8 +156,7 @@
         return;
     }
 
-    var alreadyUnlocked = false;
-    try { alreadyUnlocked = sessionStorage.getItem(UNLOCK_KEY) === "1"; } catch (e) {}
+    var alreadyUnlocked = !!storedPin();
 
     if (alreadyUnlocked) {
         enterScanner();
@@ -138,7 +177,7 @@
         postJson({ action: "checkinAuth", pin: pin })
             .then(function (data) {
                 if (data && data.ok) {
-                    try { sessionStorage.setItem(UNLOCK_KEY, "1"); } catch (e) {}
+                    try { sessionStorage.setItem(UNLOCK_KEY, pin); } catch (e) {}
                     enterScanner();
                 } else {
                     pinBtn.disabled = false;
@@ -170,6 +209,10 @@
         show(scanCard);
         refreshCount();
         startCountPolling();
+        // Warm the local roster cache right away so the first QR scan can
+        // render instantly instead of waiting on a "lookup" round trip.
+        loadGuests();
+        startGuestPolling();
         startScanner();
     }
 
@@ -226,21 +269,36 @@
         show(resultCard);
         currentGuestId = guestId;
 
-        resultStatus.className = "result__status";
-        resultStatus.textContent = "Looking up\u2026";
-        resultBody.innerHTML = "";
-        confirmBtn.classList.add("hidden");
-        scanNextBtn.classList.add("hidden");
+        var cached = guestIndex[guestId];
 
-        postJson({ action: "lookup", id: guestId })
+        if (cached) {
+            // Show what we already know instantly; the network call below
+            // re-verifies the checked-in status before enabling the write.
+            renderGuest(cached, true);
+        } else {
+            resultStatus.className = "result__status";
+            resultStatus.textContent = "Looking up\u2026";
+            resultBody.innerHTML = "";
+            confirmBtn.classList.add("hidden");
+            scanNextBtn.classList.add("hidden");
+        }
+
+        postSecure({ action: "lookup", id: guestId })
             .then(function (data) {
-                if (!data || !data.found) {
+                if (!data || data.error === "unauthorized") return;
+                if (!data.found) {
                     renderMissing(guestId);
                     return;
                 }
                 renderGuest(data);
             })
             .catch(function () {
+                // Couldn't re-verify — fall back to the cached copy so the
+                // coordinator isn't stuck on a disabled "Confirming..." button.
+                if (cached) {
+                    renderGuest(cached, false);
+                    return;
+                }
                 resultStatus.className = "result__status result__status--missing";
                 resultStatus.textContent = "Network error";
                 resultBody.innerHTML =
@@ -260,7 +318,7 @@
         scanNextBtn.classList.remove("hidden");
     }
 
-    function renderGuest(g) {
+    function renderGuest(g, pending) {
         var name = [g.firstName, g.lastName].filter(Boolean).join(" ") || "Guest";
         var alreadyIn = !!g.checkedIn;
 
@@ -269,6 +327,8 @@
             (alreadyIn ? "result__status--dupe" : "result__status--new");
         resultStatus.textContent = alreadyIn
             ? "Already checked in" + (g.checkInTime ? " \u00b7 " + g.checkInTime : "")
+            : pending
+            ? "Confirming\u2026"
             : "Confirmed guest";
 
         var html = '<div class="guest-name">' + esc(name) + "</div>";
@@ -301,8 +361,8 @@
             confirmBtn.classList.add("hidden");
         } else {
             confirmBtn.classList.remove("hidden");
-            confirmBtn.disabled = false;
-            confirmLabel.textContent = "Confirm arrived";
+            confirmBtn.disabled = !!pending;
+            confirmLabel.textContent = pending ? "Confirming\u2026" : "Confirm arrived";
         }
         scanNextBtn.classList.remove("hidden");
     }
@@ -312,10 +372,15 @@
         confirmBtn.disabled = true;
         confirmLabel.innerHTML = '<span class="spinner"></span> Saving';
 
-        postJson({ action: "checkin", id: currentGuestId })
+        postSecure({ action: "checkin", id: currentGuestId })
             .then(function (data) {
                 if (data && data.ok) {
                     refreshCount();
+                    var cached = guestIndex[currentGuestId];
+                    if (cached) {
+                        cached.checkedIn = true;
+                        cached.checkInTime = data.checkInTime || cached.checkInTime;
+                    }
                     resultStatus.className = "result__status result__status--new";
                     resultStatus.textContent =
                         "\u2713 Checked in" + (data.checkInTime ? " \u00b7 " + data.checkInTime : "");
@@ -369,9 +434,13 @@
         pauseScanner();
         hide(scanCard);
         show(listCard);
-        guestListEl.innerHTML =
-            '<p class="list-empty">Loading guest list\u2026</p>';
-        loadGuests();
+        if (allGuests.length) {
+            renderList(); // show the cached roster instantly
+        } else {
+            guestListEl.innerHTML =
+                '<p class="list-empty">Loading guest list\u2026</p>';
+        }
+        loadGuests(); // refresh in the background either way
     }
 
     function closeList() {
@@ -381,14 +450,21 @@
     }
 
     function loadGuests() {
-        postJson({ action: "guestList" })
+        return postSecure({ action: "guestList" })
             .then(function (data) {
+                if (data && data.error === "unauthorized") return;
                 allGuests = (data && data.guests) || [];
+                guestIndex = {};
+                for (var i = 0; i < allGuests.length; i++) {
+                    if (allGuests[i].id) guestIndex[allGuests[i].id] = allGuests[i];
+                }
                 renderList();
             })
             .catch(function () {
-                guestListEl.innerHTML =
-                    '<p class="list-empty">Couldn\'t load the guest list. Check your connection and try again.</p>';
+                if (!allGuests.length) {
+                    guestListEl.innerHTML =
+                        '<p class="list-empty">Couldn\'t load the guest list. Check your connection and try again.</p>';
+                }
             });
     }
 
@@ -458,7 +534,7 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span>';
 
-        postJson({ action: "checkin", id: id })
+        postSecure({ action: "checkin", id: id })
             .then(function (data) {
                 if (data && data.ok) {
                     for (var i = 0; i < allGuests.length; i++) {

@@ -216,6 +216,36 @@ If `passwordApi.url` is left empty, the site falls back to comparing against
 `localPassword` in `js/config.js` — fine for local testing, but not secure
 for real guests since that value ships in plain text.
 
+## 4. Add / replace photos (use `.jpg`!)
+
+**Always save photos as `.jpg` (JPEG), not `.png`.** PNG keeps every pixel
+lossless, which is great for logos/icons but makes real photos huge — one
+photo in this project was **8.9MB as a PNG**. The same photo as a JPG is
+usually **150–300KB**, and no one can tell the difference on a phone or
+browser screen.
+
+- **Logos / icons with transparency** (e.g. `wedding_logo_transparent.png`) →
+  keep as `.png`, they need the transparent background.
+- **Everything else** (couple photos, venue photos, entourage group shot,
+  dress code guide, background images) → **`.jpg`**.
+
+Before committing a new photo, run it through the optimizer script so it's
+resized and compressed automatically (same filename, so no HTML/CSS edits
+needed):
+
+```bash
+# one-time setup
+sudo apt install python3-pil
+
+# after adding/replacing a photo in Pictures/
+python3 scripts/optimize-images.py Pictures/your-photo.jpg
+```
+
+If you ever **replace** an existing photo with a new version under the same
+filename, add a version query string to its `src` in the HTML (e.g.
+`Pictures/dress_code.jpeg?v=2`) — otherwise returning visitors' browsers may
+keep showing the old cached copy for up to a year.
+
 ## 5. Google Maps
 
 The venue map is an `<iframe>` in `index.html`. To change the location, edit the
@@ -338,6 +368,16 @@ final `return saveRsvp(data);` line):
      return jsonResponse({ ok: checkinPinOk(data.pin) });
    }
 
+   // checkinApi.url is public in js/config.js, so every action below that
+   // reads or writes guest data must re-verify the PIN itself — a
+   // client-side "unlocked" flag is never proof of authorization on its own.
+   if (data.action === "lookup" || data.action === "checkin" ||
+       data.action === "checkinCount" || data.action === "guestList") {
+     if (!checkinPinOk(data.pin)) {
+       return jsonResponse({ error: "unauthorized" });
+     }
+   }
+
    if (data.action === "lookup") {
      return jsonResponse(lookupGuest(data.id));
    }
@@ -380,22 +420,49 @@ function checkinPinOk(candidate) {
   return !!real && (candidate || "").toString() === real;
 }
 
-function findGuestRow(sheet, id) {
+const GUESTS_CACHE_KEY = "guests_data_v1";
+const GUESTS_CACHE_TTL_SEC = 30; // short-lived; a check-in always invalidates it immediately
+
+// Reads the whole Guests tab once per cache window instead of on every
+// request. lookup/guestList/checkinCount all read from this in-memory
+// snapshot, which is what actually makes the scanner and guest list feel
+// fast — each SpreadsheetApp call is a network round trip on Google's end,
+// and this cuts that down to (at most) one per 30s per Apps Script instance.
+function getGuestsData_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(GUESTS_CACHE_KEY);
+  if (cached) return JSON.parse(cached);
+
+  const sheet = getGuestsSheet();
+  const last = sheet.getLastRow();
+  const rows = last < 2 ? [] : sheet.getRange(2, 1, last - 1, 9).getValues();
+  const data = rows
+    .filter(function (r) { return (r[GUEST_COLS.id - 1] || "").toString().trim(); })
+    .map(function (r) { return { values: r }; });
+
+  cache.put(GUESTS_CACHE_KEY, JSON.stringify(data), GUESTS_CACHE_TTL_SEC);
+  return data;
+}
+
+function invalidateGuestsCache_() {
+  CacheService.getScriptCache().remove(GUESTS_CACHE_KEY);
+}
+
+function findGuestEntry_(id) {
   const wanted = (id || "").toString().trim();
-  if (!wanted) return -1;
-  const ids = sheet.getRange(2, GUEST_COLS.id, Math.max(sheet.getLastRow() - 1, 0), 1).getValues();
-  for (let i = 0; i < ids.length; i++) {
-    if ((ids[i][0] || "").toString().trim() === wanted) return i + 2; // 1-based, skip header
+  if (!wanted) return null;
+  const data = getGuestsData_();
+  for (let i = 0; i < data.length; i++) {
+    if ((data[i].values[GUEST_COLS.id - 1] || "").toString().trim() === wanted) return data[i];
   }
-  return -1;
+  return null;
 }
 
 function lookupGuest(id) {
-  const sheet = getGuestsSheet();
-  const row = findGuestRow(sheet, id);
-  if (row === -1) return { found: false };
+  const entry = findGuestEntry_(id);
+  if (!entry) return { found: false };
 
-  const values = sheet.getRange(row, 1, 1, 9).getValues()[0];
+  const values = entry.values;
   return {
     found: true,
     firstName: values[GUEST_COLS.first - 1],
@@ -413,62 +480,76 @@ function lookupGuest(id) {
 }
 
 function checkinGuest(id) {
-  const sheet = getGuestsSheet();
-  const row = findGuestRow(sheet, id);
-  if (row === -1) return { ok: false };
+  // Check-ins are writes, so they always go straight to the sheet (never
+  // the cache) and take a lock — two coordinator phones could otherwise
+  // both read "not checked in" for the same guest at the same instant.
+  const lock = LockService.getScriptLock();
+  lock.waitLock(5000);
+  try {
+    const sheet = getGuestsSheet();
+    const wanted = (id || "").toString().trim();
+    const last = sheet.getLastRow();
+    if (!wanted || last < 2) return { ok: false };
 
-  const already = !!sheet.getRange(row, GUEST_COLS.checkedIn).getValue();
-  if (!already) {
-    const now = new Date();
-    sheet.getRange(row, GUEST_COLS.checkedIn).setValue(true);
-    sheet.getRange(row, GUEST_COLS.checkInTime).setValue(now);
+    const ids = sheet.getRange(2, GUEST_COLS.id, last - 1, 1).getValues();
+    let row = -1;
+    for (let i = 0; i < ids.length; i++) {
+      if ((ids[i][0] || "").toString().trim() === wanted) { row = i + 2; break; }
+    }
+    if (row === -1) return { ok: false };
+
+    const already = !!sheet.getRange(row, GUEST_COLS.checkedIn).getValue();
+    if (!already) {
+      const now = new Date();
+      sheet.getRange(row, GUEST_COLS.checkedIn).setValue(true);
+      sheet.getRange(row, GUEST_COLS.checkInTime).setValue(now);
+      invalidateGuestsCache_();
+      return {
+        ok: true, alreadyCheckedIn: false,
+        checkInTime: Utilities.formatDate(now, "Asia/Manila", "h:mm a"),
+      };
+    }
+    const prev = sheet.getRange(row, GUEST_COLS.checkInTime).getValue();
     return {
-      ok: true, alreadyCheckedIn: false,
-      checkInTime: Utilities.formatDate(now, "Asia/Manila", "h:mm a"),
+      ok: true, alreadyCheckedIn: true,
+      checkInTime: prev ? Utilities.formatDate(new Date(prev), "Asia/Manila", "h:mm a") : "",
     };
+  } finally {
+    lock.releaseLock();
   }
-  const prev = sheet.getRange(row, GUEST_COLS.checkInTime).getValue();
-  return {
-    ok: true, alreadyCheckedIn: true,
-    checkInTime: prev ? Utilities.formatDate(new Date(prev), "Asia/Manila", "h:mm a") : "",
-  };
 }
 
 // Shared checked-in total, read straight from the Sheet so every
 // coordinator's phone shows the same live number (see 8e).
 function countCheckedIn() {
-  const sheet = getGuestsSheet();
-  const last = sheet.getLastRow();
-  if (last < 2) return 0;
-  const flags = sheet.getRange(2, GUEST_COLS.checkedIn, last - 1, 1).getValues();
+  const data = getGuestsData_();
   let n = 0;
-  for (let i = 0; i < flags.length; i++) {
-    if (flags[i][0]) n++;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i].values[GUEST_COLS.checkedIn - 1]) n++;
   }
   return n;
 }
 
-// Returns the whole guest list (name, group, seat, status) so the
-// coordinator page can show it and do manual check-ins by tapping a name.
+// Returns the whole guest list (name, group, seat, status, email, note) so
+// the coordinator page can show it, do manual check-ins by tapping a name,
+// and render QR scan results instantly from its own local copy of this list.
 function listGuests() {
-  const sheet = getGuestsSheet();
-  const last = sheet.getLastRow();
-  if (last < 2) return [];
-  const rows = sheet.getRange(2, 1, last - 1, 9).getValues();
-  return rows
-    .filter(function (r) { return (r[GUEST_COLS.id - 1] || "").toString().trim(); })
-    .map(function (r) {
-      const t = r[GUEST_COLS.checkInTime - 1];
-      return {
-        id:        (r[GUEST_COLS.id - 1] || "").toString().trim(),
-        firstName: r[GUEST_COLS.first - 1],
-        lastName:  r[GUEST_COLS.last - 1],
-        group:     r[GUEST_COLS.group - 1],
-        seat:      r[GUEST_COLS.seat - 1],
-        checkedIn: !!r[GUEST_COLS.checkedIn - 1],
-        checkInTime: t ? Utilities.formatDate(new Date(t), "Asia/Manila", "h:mm a") : "",
-      };
-    });
+  const data = getGuestsData_();
+  return data.map(function (entry) {
+    const r = entry.values;
+    const t = r[GUEST_COLS.checkInTime - 1];
+    return {
+      id:        (r[GUEST_COLS.id - 1] || "").toString().trim(),
+      firstName: r[GUEST_COLS.first - 1],
+      lastName:  r[GUEST_COLS.last - 1],
+      email:     r[GUEST_COLS.email - 1],
+      group:     r[GUEST_COLS.group - 1],
+      seat:      r[GUEST_COLS.seat - 1],
+      note:      r[GUEST_COLS.note - 1],
+      checkedIn: !!r[GUEST_COLS.checkedIn - 1],
+      checkInTime: t ? Utilities.formatDate(new Date(t), "Asia/Manila", "h:mm a") : "",
+    };
+  });
 }
 ```
 
