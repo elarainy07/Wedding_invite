@@ -670,7 +670,7 @@ body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; 
 .entourage__group p:not(.entourage__sublabel):not(.entourage__featured-name)::before,
 .entourage__featured-name::before {
     content:"";
-    width:56px; height:56px;
+    width:88px; height:88px;
     border-radius:50%;
     background:var(--white) url("../img/avatar-placeholder.svg") center/62% no-repeat;
     background-color:var(--c-vio-bg);
@@ -678,7 +678,7 @@ body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; 
     box-shadow:var(--shadow-card);
     flex-shrink:0;
 }
-.entourage__featured-name::before { width:80px; height:80px; }
+.entourage__featured-name::before { width:120px; height:120px; }
 .entourage__group p.has-photo::before,
 .entourage__featured-name.has-photo::before {
     background-image:var(--photo) !important; background-size:cover !important; background-position:center !important;
