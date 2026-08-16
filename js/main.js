@@ -1133,11 +1133,22 @@ window.__onCleanup = function (fn) {
 
     // Re-execute this script so every per-page module re-binds to the swapped
     // DOM. The music, password and router modules are guarded and skip re-runs.
+    // Reuse the same versioned URL the page loaded (js/main.js?v=…) so we don't
+    // pull a stale copy from the immutable 1-year asset cache.
     function reinit() {
         var s = document.createElement("script");
-        s.src = "js/main.js";
+        s.src = mainScriptSrc();
         s.onload = function () { s.parentNode && s.parentNode.removeChild(s); };
         document.body.appendChild(s);
+    }
+
+    function mainScriptSrc() {
+        var scripts = document.getElementsByTagName("script");
+        for (var i = 0; i < scripts.length; i++) {
+            var src = scripts[i].getAttribute("src") || "";
+            if (src.indexOf("js/main.js") !== -1) return src;
+        }
+        return "js/main.js";
     }
 })();
 
