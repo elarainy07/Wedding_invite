@@ -398,6 +398,10 @@ body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; 
 .story__album-track { display:flex; gap:10px; padding:0; width:max-content; }
 .story__album-photo { flex:0 0 190px; scroll-snap-align:start; border-radius:var(--radius-sm); overflow:hidden; }
 .story__album-photo img { width:190px; height:230px; object-fit:cover; display:block; }
+/* Snap the LAST photo to the end (not start) so scrolling all the way through
+   lands it flush against the album's right edge instead of the browser
+   reserving extra scrollable space to let it snap flush against the left. */
+.story__album-photo:last-child { scroll-snap-align:end; }
 /* Variant for chapters with only a couple of photos: no horizontal scroll/scrollbar,
    photos wrap and center within the available width instead. */
 .story__chapter-album--no-scroll { overflow:visible; }
