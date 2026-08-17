@@ -1025,8 +1025,9 @@ body.modal-open { overflow:hidden; }
    ================================================================ */
 @media (max-width:900px) {
     .story__chapter { grid-template-columns:1fr; gap:30px; }
-    .story__chapter--reverse .story__chapter-album { order:unset; }
-    .story__chapter--reverse .story__chapter-body  { order:unset; }
+    /* On mobile, always show the chapter text before its photo album, regardless of reverse variant. */
+    .story__chapter-body  { order:1; }
+    .story__chapter-album { order:2; }
     .attire__wrap { grid-template-columns:1fr; gap:36px; }
     .savethedate__card { flex-direction:column; text-align:center; gap:24px; padding:36px 28px; }
     .savethedate__date-badge { border-right:none; border-bottom:2px solid var(--c-blue); padding-right:0; padding-bottom:24px; min-width:auto; }
