@@ -1,0 +1,25 @@
+# Netlify configuration for a static site (no build step).
+[build]
+  # Everything is served straight from the repository root.
+  publish = "."
+
+# Serve clean URLs (e.g. /love-story instead of /love-story.html).
+[[redirects]]
+  from = "/love-story"
+  to = "/love-story.html"
+  status = 200
+
+[[redirects]]
+  from = "/entourage"
+  to = "/entourage.html"
+  status = 200
+
+[[redirects]]
+  from = "/hotel-rates"
+  to = "/hotel-rates.html"
+  status = 200
+
+[[redirects]]
+  from = "/checkin"
+  to = "/checkin.html"
+  status = 200

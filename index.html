@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;500;600&family=Great+Vibes&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/style.css?v=20260816" />
 </head>
 <body>
 
@@ -75,33 +75,28 @@
 <!-- HERO -->
 <header class="hero" id="top">
     <div class="hero__stars" aria-hidden="true"></div>
-    <!-- COUPLE PHOTO PLACEHOLDER: Replace div.hero__bg-photo with <img src="img/couple-hero.jpg" alt="Jude &amp; Nica" class="hero__photo-img"> -->
     <div class="hero__bg-photo">
-        <div class="hero__bg-placeholder">
-            <span>&#128248;</span>
-            <p>Your Couple Photo Here</p>
-        </div>
+        <img src="Pictures/front_page_try.jpeg" alt="Jude &amp; Nica" class="hero__photo-img">
     </div>
     <div class="hero__overlay"></div>
     <div class="hero__content">
-        <p class="hero__eyebrow"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-sparkle"></use></svg> You are invited! <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-sparkle"></use></svg></p>
-        <h1 class="hero__names">Jude <span>&amp;</span> Nica</h1>
-        <p class="hero__tagline">is getting married</p>
-        <div class="hero__date">
-            <span class="hero__date-main">January 23, 2027</span>
-            <span>Tagaytay City, Cavite, Philippines</span>
+        <div class="hero__top">
+            <p class="hero__eyebrow"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-sparkle"></use></svg> You are invited! <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-sparkle"></use></svg></p>
+            <h1 class="hero__names">Jude <span>&amp;</span> Nica</h1>
+            <p class="hero__tagline">is getting married</p>
         </div>
-        <a href="#rsvp" class="btn btn--light">RSVP Now <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-envelope"></use></svg></a>
-        <a href="#story" class="hero__scroll" aria-label="Scroll down to see more details">
-            <span class="hero__scroll-mouse" aria-hidden="true"></span>
-            <span class="hero__scroll-label">Scroll for details</span>
-            <span class="hero__scroll-chevron" aria-hidden="true"></span>
-        </a>
-    </div>
-    <div class="hero__floral" aria-hidden="true">
-        <svg viewBox="0 0 1200 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0,80 L0,40 Q150,0 300,40 Q450,80 600,40 Q750,0 900,40 Q1050,80 1200,40 L1200,80 Z" fill="#fef9fb"/>
-        </svg>
+        <div class="hero__bottom">
+            <div class="hero__date">
+                <span class="hero__date-main">January 23, 2027</span>
+                <span>Tagaytay City, Cavite, Philippines</span>
+            </div>
+            <a href="#rsvp" class="btn btn--light">RSVP Now <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-envelope"></use></svg></a>
+            <a href="#story" class="hero__scroll" aria-label="Scroll down to see more details">
+                <span class="hero__scroll-mouse" aria-hidden="true"></span>
+                <span class="hero__scroll-label">Scroll for details</span>
+                <span class="hero__scroll-chevron" aria-hidden="true"></span>
+            </a>
+        </div>
     </div>
 </header>
 
@@ -207,7 +202,7 @@
         <!-- Ceremony -->
         <div class="venue__card reveal">
             <div class="venue__img">
-                <img src="Pictures/san_antonio_de_padua_chapel.jpg" alt="San Antonio de Padua Chapel" class="venue__photo">
+                <img src="Pictures/san_antonio_de_padua_chapel.jpg" alt="San Antonio de Padua Chapel" class="venue__photo" loading="lazy" decoding="async">
             </div>
             <div class="venue__body">
                 <div class="venue__badge venue__badge--ceremony">Ceremony</div>
@@ -221,7 +216,7 @@
         <!-- Reception -->
         <div class="venue__card reveal">
             <div class="venue__img">
-                <img src="Pictures/alta_D_tagaytay.jpg" alt="Alta D&#8217; Tagaytay" class="venue__photo">
+                <img src="Pictures/alta_D_tagaytay.jpg" alt="Alta D&#8217; Tagaytay" class="venue__photo" loading="lazy" decoding="async">
             </div>
             <div class="venue__body">
                 <div class="venue__badge venue__badge--reception">Reception</div>
@@ -247,11 +242,11 @@
     </div>
     <div class="attire__wrap reveal">
         <div class="attire__img">
-            <img src="Pictures/dress_code.jpeg" alt="Attire Guide" class="attire__guide-img">
+            <img src="Pictures/dress_code.jpeg" alt="Attire Guide" class="attire__guide-img" loading="lazy" decoding="async">
         </div>
         <div class="attire__body">
             <h3>Dress Code</h3>
-            <p>We&#8217;d love for our guests to dress in <strong>semi-formal attire</strong> and follow our wedding colour palette: <strong>blue, yellow, pink, green, orange, and purple</strong> in soft, elegant tones.</p>
+            <p>We&#8217;d love for our guests to dress in <strong>formal attire</strong> and follow our wedding colour palette: <strong>blue, yellow, pink, green, orange, and purple</strong> in soft, elegant tones.</p>
             <p>The attire guide is for inspiration only, so feel free to wear what makes you feel comfortable and confident while celebrating with us.</p>
             <p class="attire__note"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-medal"></use></svg> Get a chance to be awarded as the <strong>Best Dressed Guest</strong> of the evening! Dress to impress and let your style shine.</p>
         </div>
@@ -331,7 +326,7 @@
         <p class="section__sub">The wonderful people who will stand beside us on our big day</p>
     </div>
     <div class="entourage-teaser__photo reveal">
-        <img src="Pictures/Entourage_Main.png" alt="Our Entourage" class="entourage-teaser__img">
+        <img src="Pictures/Entourage_Main.png" alt="Our Entourage" class="entourage-teaser__img" loading="lazy" decoding="async">
     </div>
     <div class="entourage-teaser__cta reveal">
         <a href="entourage.html" class="btn btn--dark">Meet Our Entourage <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-bouquet"></use></svg></a>
@@ -427,7 +422,7 @@
         <div class="form__group">
             <label for="email">Email <span aria-hidden="true">*</span></label>
             <input type="email" id="email" name="email" required autocomplete="email" placeholder="your@email.com" />
-            <p class="form__hint">We&#8217;ll email your RSVP confirmation &amp; QR code here to present at reception registration &mdash; expect it about a week before the wedding, so please use an active email address.</p>
+            <p class="form__hint">We&#8217;ll email your RSVP confirmation &amp; QR code in this email to present at reception registration &mdash; expect it about a week before the wedding, so please use an active email address.</p>
         </div>
         <div class="form__group">
             <label for="attending">Will you attend? <span aria-hidden="true">*</span></label>
@@ -438,17 +433,18 @@
             </select>
         </div>
         <div class="form__group">
-            <label for="flightHelp">Flying in from overseas?</label>
+            <label for="flightHelp">Flying in from overseas? Need help finding a flight?</label>
             <select id="flightHelp" name="flightHelp">
                 <option value="" selected>N/A &mdash; I&#8217;m local</option>
                 <option value="Yes, please help me find a cheap flight">Yes, I&#8217;d love help finding a cheap flight</option>
-                <option value="No thanks, my flight is sorted">No thanks, I&#8217;ve got my flight sorted</option>
+                <option value="No thanks, my flight is sorted">No, I&#8217;m flying in but my flight is sorted</option>
             </select>
             <p class="form__hint">Jude&#8217;s a pro at hunting down cheap flights! Pick &#8220;Yes&#8221; above and he&#8217;ll get an email to help you out.</p>
         </div>
         <div class="form__group">
             <label for="message">Message to the Couple <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-hearts"></use></svg></label>
             <textarea id="message" name="message" rows="4" placeholder="Share your wishes and love for Jude &amp; Nica&hellip;"></textarea>
+            <p class="form__hint">Optional &mdash; if you leave a note, it&#8217;ll appear on the Messages for the Couple wall below for everyone to see.</p>
         </div>
         <button type="submit" class="btn btn--dark btn--full" id="rsvpSubmit">Send RSVP <svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-envelope"></use></svg></button>
         <p class="rsvp__note"><svg class="icon" aria-hidden="true"><use href="img/icons.svg#icon-warning"></use></svg> Please note that failure to respond by the deadline will be considered as <strong>not attending</strong>, and your reserved seat will be offered to another guest. We appreciate your prompt response!</p>
@@ -462,7 +458,8 @@
     <div class="rsvp-modal__box">
         <svg class="icon rsvp-modal__icon" aria-hidden="true"><use href="img/icons.svg#icon-hearts"></use></svg>
         <h3 class="rsvp-modal__title" id="rsvpSuccessTitle">Thank you!</h3>
-        <p class="rsvp-modal__text">Your RSVP has been received.</p>
+        <p class="rsvp-modal__text" id="rsvpSuccessMain">Your RSVP has been received.</p>
+        <p class="rsvp-modal__text" id="rsvpSuccessQrNote">We&#8217;ll email your RSVP confirmation &amp; QR code to present at reception registration to the email address you entered &mdash; expect it about a week before the wedding.</p>
         <button type="button" class="btn btn--dark rsvp-modal__close" id="rsvpSuccessClose">Close</button>
     </div>
 </div>
@@ -484,10 +481,10 @@
     <p class="footer__names">Jude &amp; Nica</p>
     <p class="footer__date">01 &middot; 23 &middot; 2027 &mdash; Tagaytay City, Cavite, Philippines</p>
     <p class="footer__hashtags">#NicsChapterWithJude &nbsp;&middot;&nbsp; #NicaSamaNaSiJudeHabangBuhay</p>
-    <p class="footer__quote">Every journey begins with a choice &nbsp;<img src="pokeball (1).png" alt="Pok&#233;ball" class="footer__pokeball"></p>
+    <p class="footer__quote">Every journey begins with a choice &nbsp;<img src="pokeball (1).png" alt="Pok&#233;ball" class="footer__pokeball" loading="lazy" decoding="async"></p>
 </footer>
 
-<script src="js/config.js"></script>
-<script src="js/main.js"></script>
+<script src="js/config.js?v=20260816"></script>
+<script src="js/main.js?v=20260816"></script>
 </body>
 </html>

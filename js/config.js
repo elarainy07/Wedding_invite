@@ -48,7 +48,7 @@ window.WEDDING_CONFIG = {
      *  Set passwordApi.url to "" to disable password protection.
      * ----------------------------------------------------- */
     passwordApi: {
-        url: "https://script.google.com/macros/s/AKfycbzNawltDJHHztVGMs4Xyr8p6kPPG5uLpZWoibeyt6PsDvPtIko4NKDCBZxEBq4wxIWH/exec",
+        url: "https://script.google.com/macros/s/AKfycbzbLKOA3_H62VDFiK5qCXzmCneUNgCbZZqCA7Il5jC_na3P3cwopJxpc39B5NMdPb9DAA/exec",
     },
 
     /* Insecure local fallback — only used when passwordApi.url above is
@@ -91,7 +91,7 @@ window.WEDDING_CONFIG = {
      *  silently.
      * ----------------------------------------------------- */
     rsvpApi: {
-        url: "https://script.google.com/macros/s/AKfycbzNawltDJHHztVGMs4Xyr8p6kPPG5uLpZWoibeyt6PsDvPtIko4NKDCBZxEBq4wxIWH/exec",
+        url: "https://script.google.com/macros/s/AKfycbzbLKOA3_H62VDFiK5qCXzmCneUNgCbZZqCA7Il5jC_na3P3cwopJxpc39B5NMdPb9DAA/exec",
     },
 
     /* -------------------------------------------------------
@@ -107,7 +107,7 @@ window.WEDDING_CONFIG = {
      *  to saving messages only in each guest's own browser.
      * ----------------------------------------------------- */
     messagesApi: {
-        url: "https://script.google.com/macros/s/AKfycbzNawltDJHHztVGMs4Xyr8p6kPPG5uLpZWoibeyt6PsDvPtIko4NKDCBZxEBq4wxIWH/exec",
+        url: "https://script.google.com/macros/s/AKfycbzbLKOA3_H62VDFiK5qCXzmCneUNgCbZZqCA7Il5jC_na3P3cwopJxpc39B5NMdPb9DAA/exec",
     },
 
     /* -------------------------------------------------------
@@ -127,7 +127,7 @@ window.WEDDING_CONFIG = {
      *  check-in page.
      * ----------------------------------------------------- */
     checkinApi: {
-        url: "https://script.google.com/macros/s/AKfycbzNawltDJHHztVGMs4Xyr8p6kPPG5uLpZWoibeyt6PsDvPtIko4NKDCBZxEBq4wxIWH/exec",
+        url: "https://script.google.com/macros/s/AKfycbzbLKOA3_H62VDFiK5qCXzmCneUNgCbZZqCA7Il5jC_na3P3cwopJxpc39B5NMdPb9DAA/exec",
     },
 };
 

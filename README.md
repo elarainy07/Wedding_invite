@@ -3,7 +3,7 @@
 A single-page, fully responsive, fairytale-themed wedding invitation with three
 Google integrations:
 
-- **Google Sheets (via Apps Script)** — the RSVP form and the Messages-for-the-Couple wall both post into one Google Sheet (separate tabs), through a single Apps Script web app.
+- **Google Sheets (via Apps Script)** — the RSVP form, the Messages-for-the-Couple wall, and the guest check-in list all live in **one Google Sheet** (separate tabs: `RSVPs`, `Messages`, `Guests`), through a single Apps Script web app.
 - **Google Maps** — an embedded venue map plus a one-tap "Get Directions" link.
 - **Google Calendar** — an "Add to Google Calendar" button pre-filled with the event details.
 
@@ -57,20 +57,22 @@ styled "coming soon" placeholder automatically.
 
 ## 3. Connect RSVP, Messages & Password (one Google Apps Script + Sheet)
 
-RSVPs, the Messages-for-the-Couple wall, and the password gate all share a
-**single Google Sheet** (two tabs: `RSVPs` and `Messages`) through **one
-small free Google Apps Script** web app — no Google Form, no extra sheet,
-no server needed.
+RSVPs, the Messages-for-the-Couple wall, the password gate, and the guest
+check-in list all share a **single Google Sheet** (three tabs: `RSVPs`,
+`Messages`, and `Guests`) through **one small free Google Apps Script** web
+app — no Google Form, no extra sheet, no server needed.
 
 1. Open the Google Sheet you want everything saved to (e.g. the one you
-   already created for this project). Both tabs are created automatically
-   the first time each is written to.
+   already created for this project). The `RSVPs` and `Messages` tabs are
+   created automatically the first time each is written to; the `Guests`
+   tab is created automatically too, but see [step 8a](#8a-add-a-guests-tab-to-the-same-spreadsheet)
+   before you rely on it — you'll want to fill it in with real guest rows.
 2. Open **Extensions → Apps Script**, delete any starter code, and paste in:
 
    ```javascript
    const RSVP_SHEET_NAME = "RSVPs";
    const MESSAGES_SHEET_NAME = "Messages";
-   const FLIGHT_HELP_EMAIL = "judeaeddrian@gmail.com";
+   const FLIGHT_HELP_EMAIL = "email_address";
    const FLIGHT_HELP_YES = "Yes, please help me find a cheap flight";
 
    function doGet(e) {
@@ -214,6 +216,36 @@ If `passwordApi.url` is left empty, the site falls back to comparing against
 `localPassword` in `js/config.js` — fine for local testing, but not secure
 for real guests since that value ships in plain text.
 
+## 4. Add / replace photos (use `.jpg`!)
+
+**Always save photos as `.jpg` (JPEG), not `.png`.** PNG keeps every pixel
+lossless, which is great for logos/icons but makes real photos huge — one
+photo in this project was **8.9MB as a PNG**. The same photo as a JPG is
+usually **150–300KB**, and no one can tell the difference on a phone or
+browser screen.
+
+- **Logos / icons with transparency** (e.g. `wedding_logo_transparent.png`) →
+  keep as `.png`, they need the transparent background.
+- **Everything else** (couple photos, venue photos, entourage group shot,
+  dress code guide, background images) → **`.jpg`**.
+
+Before committing a new photo, run it through the optimizer script so it's
+resized and compressed automatically (same filename, so no HTML/CSS edits
+needed):
+
+```bash
+# one-time setup
+sudo apt install python3-pil
+
+# after adding/replacing a photo in Pictures/
+python3 scripts/optimize-images.py Pictures/your-photo.jpg
+```
+
+If you ever **replace** an existing photo with a new version under the same
+filename, add a version query string to its `src` in the HTML (e.g.
+`Pictures/dress_code.jpeg?v=2`) — otherwise returning visitors' browsers may
+keep showing the old cached copy for up to a year.
+
 ## 5. Google Maps
 
 The venue map is an `<iframe>` in `index.html`. To change the location, edit the
@@ -246,10 +278,23 @@ Google Sheet, no hardware scanner or app install needed. It's backed by the
 same Apps Script web app; just set `checkinApi.url` in `js/config.js` to the
 same `/exec` URL as everything else.
 
-### 8a. Add a `Guests` tab to the Sheet
+### 8a. Add a `Guests` tab to the same spreadsheet
 
-Create a tab named **`Guests`** with these column headers in row 1 (the order
-matters — the script reads by position):
+The `Guests` tab lives in the **same Google Sheet** as `RSVPs` and
+`Messages` — one spreadsheet, one Apps Script, one deployment URL for
+everything on the site. (If your coordinator only needs to scan QR codes,
+they don't need Sheet access at all — `checkin.html` + the PIN is all
+they use. Only give them **Editor** access to the whole spreadsheet if you
+want them editing seats/notes/groups directly in the Sheet, in which case
+they'll also be able to see the `RSVPs` and `Messages` tabs.)
+
+1. In the same Google Sheet used for `RSVPs`/`Messages`, add a new tab and
+   rename it to **`Guests`** (it's also created automatically, with the
+   header row below, the first time the script writes to it — but create
+   it up front if you want to fill it in manually before the RSVP
+   deadline).
+2. Give it these column headers in row 1 (the order matters — the script
+   reads by position):
 
 | GuestID | First Name | Last Name | Email | Group | Seat | Note | CheckedIn | CheckInTime | QR Sent |
 | ------- | ---------- | --------- | ----- | ----- | ---- | ---- | --------- | ----------- | ------- |
@@ -268,7 +313,39 @@ matters — the script reads by position):
   anyone.
 
 You can build this tab from your confirmed **RSVPs** rows after the RSVP
-deadline (copy names/emails over, then add IDs, seats, groups and notes).
+deadline (copy names/emails over, then add IDs, seats, groups and notes) —
+just paste them into the `Guests` tab in the same spreadsheet, right next
+to `RSVPs` and `Messages`.
+
+> **Migrating from a previous separate Guests spreadsheet?** Open the old
+> Guests spreadsheet, select all its data (including the header row), copy
+> it, then paste it into the new `Guests` tab in the main spreadsheet. Once
+> confirmed, you can delete the old spreadsheet (or keep it as a backup) —
+> the Apps Script below no longer reads from it.
+
+> ⚠️ **Don't generate GuestID with a formula like
+> `="g_"&ROW()&"_"&RANDBETWEEN(100000,999999)`.** `RANDBETWEEN` is volatile —
+> it recalculates (and produces a *new* random number) on every edit anywhere
+> in the spreadsheet or whenever the sheet is reopened. That silently changes
+> the ID after it's already been baked into an emailed QR code, so the
+> scanner reports "not on the guest list" for a guest who genuinely RSVP'd.
+> Use the formula once to generate an ID, then immediately freeze the whole
+> column to plain text by running this from the Apps Script editor:
+>
+> ```javascript
+> function freezeGuestIds() {
+>   const sheet = getGuestsSheet();
+>   const last = sheet.getLastRow();
+>   if (last < 2) return;
+>   const range = sheet.getRange(2, GUEST_COLS.id, last - 1, 1);
+>   range.setValues(range.getValues()); // evaluate formulas once, write back as static text
+> }
+> ```
+>
+> Run `freezeGuestIds` **before** `emailGuestQRCodes`, and again any time you
+> add new rows with the formula. If a QR was already emailed before freezing
+> and no longer matches, clear that guest's `CheckedIn`, `CheckInTime` and
+> `QR Sent` cells and re-run `emailGuestQRCodes` to resend a corrected QR.
 
 ### 8b. Set the coordinator PIN
 
@@ -283,12 +360,22 @@ ships in the repo:
 
 ### 8c. Add the check-in logic to the same Apps Script
 
-Route the three new actions in `doPost` (add these `if` blocks **above** the
+Route the check-in actions in `doPost` (add these `if` blocks **above** the
 final `return saveRsvp(data);` line):
 
 ```javascript
    if (data.action === "checkinAuth") {
      return jsonResponse({ ok: checkinPinOk(data.pin) });
+   }
+
+   // checkinApi.url is public in js/config.js, so every action below that
+   // reads or writes guest data must re-verify the PIN itself — a
+   // client-side "unlocked" flag is never proof of authorization on its own.
+   if (data.action === "lookup" || data.action === "checkin" ||
+       data.action === "checkinCount" || data.action === "guestList") {
+     if (!checkinPinOk(data.pin)) {
+       return jsonResponse({ error: "unauthorized" });
+     }
    }
 
    if (data.action === "lookup") {
@@ -297,6 +384,14 @@ final `return saveRsvp(data);` line):
 
    if (data.action === "checkin") {
      return jsonResponse(checkinGuest(data.id));
+   }
+
+   if (data.action === "checkinCount") {
+     return jsonResponse({ count: countCheckedIn() });
+   }
+
+   if (data.action === "guestList") {
+     return jsonResponse({ guests: listGuests() });
    }
 ```
 
@@ -309,29 +404,65 @@ const GUEST_COLS = {
   id: 1, first: 2, last: 3, email: 4,
   group: 5, seat: 6, note: 7, checkedIn: 8, checkInTime: 9, qrSent: 10,
 };
+// NOTE: GUEST_COLS must include qrSent: 10 or emailGuestQRCodes()
+// throws "getRange (number,null)" when it reads/writes that column.
+
+// Opens the Guests tab in the same spreadsheet as RSVPs/Messages.
+function getGuestsSheet() {
+  return getSheet(GUESTS_SHEET_NAME, [
+    "GuestID", "First Name", "Last Name", "Email",
+    "Group", "Seat", "Note", "CheckedIn", "CheckInTime", "QR Sent",
+  ]);
+}
 
 function checkinPinOk(candidate) {
   const real = PropertiesService.getScriptProperties().getProperty("CHECKIN_PIN") || "";
   return !!real && (candidate || "").toString() === real;
 }
 
-function findGuestRow(sheet, id) {
+const GUESTS_CACHE_KEY = "guests_data_v1";
+const GUESTS_CACHE_TTL_SEC = 30; // short-lived; a check-in always invalidates it immediately
+
+// Reads the whole Guests tab once per cache window instead of on every
+// request. lookup/guestList/checkinCount all read from this in-memory
+// snapshot, which is what actually makes the scanner and guest list feel
+// fast — each SpreadsheetApp call is a network round trip on Google's end,
+// and this cuts that down to (at most) one per 30s per Apps Script instance.
+function getGuestsData_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(GUESTS_CACHE_KEY);
+  if (cached) return JSON.parse(cached);
+
+  const sheet = getGuestsSheet();
+  const last = sheet.getLastRow();
+  const rows = last < 2 ? [] : sheet.getRange(2, 1, last - 1, 9).getValues();
+  const data = rows
+    .filter(function (r) { return (r[GUEST_COLS.id - 1] || "").toString().trim(); })
+    .map(function (r) { return { values: r }; });
+
+  cache.put(GUESTS_CACHE_KEY, JSON.stringify(data), GUESTS_CACHE_TTL_SEC);
+  return data;
+}
+
+function invalidateGuestsCache_() {
+  CacheService.getScriptCache().remove(GUESTS_CACHE_KEY);
+}
+
+function findGuestEntry_(id) {
   const wanted = (id || "").toString().trim();
-  if (!wanted) return -1;
-  const ids = sheet.getRange(2, GUEST_COLS.id, Math.max(sheet.getLastRow() - 1, 0), 1).getValues();
-  for (let i = 0; i < ids.length; i++) {
-    if ((ids[i][0] || "").toString().trim() === wanted) return i + 2; // 1-based, skip header
+  if (!wanted) return null;
+  const data = getGuestsData_();
+  for (let i = 0; i < data.length; i++) {
+    if ((data[i].values[GUEST_COLS.id - 1] || "").toString().trim() === wanted) return data[i];
   }
-  return -1;
+  return null;
 }
 
 function lookupGuest(id) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
-  if (!sheet) return { found: false };
-  const row = findGuestRow(sheet, id);
-  if (row === -1) return { found: false };
+  const entry = findGuestEntry_(id);
+  if (!entry) return { found: false };
 
-  const values = sheet.getRange(row, 1, 1, 9).getValues()[0];
+  const values = entry.values;
   return {
     found: true,
     firstName: values[GUEST_COLS.first - 1],
@@ -349,26 +480,76 @@ function lookupGuest(id) {
 }
 
 function checkinGuest(id) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
-  if (!sheet) return { ok: false };
-  const row = findGuestRow(sheet, id);
-  if (row === -1) return { ok: false };
+  // Check-ins are writes, so they always go straight to the sheet (never
+  // the cache) and take a lock — two coordinator phones could otherwise
+  // both read "not checked in" for the same guest at the same instant.
+  const lock = LockService.getScriptLock();
+  lock.waitLock(5000);
+  try {
+    const sheet = getGuestsSheet();
+    const wanted = (id || "").toString().trim();
+    const last = sheet.getLastRow();
+    if (!wanted || last < 2) return { ok: false };
 
-  const already = !!sheet.getRange(row, GUEST_COLS.checkedIn).getValue();
-  if (!already) {
-    const now = new Date();
-    sheet.getRange(row, GUEST_COLS.checkedIn).setValue(true);
-    sheet.getRange(row, GUEST_COLS.checkInTime).setValue(now);
+    const ids = sheet.getRange(2, GUEST_COLS.id, last - 1, 1).getValues();
+    let row = -1;
+    for (let i = 0; i < ids.length; i++) {
+      if ((ids[i][0] || "").toString().trim() === wanted) { row = i + 2; break; }
+    }
+    if (row === -1) return { ok: false };
+
+    const already = !!sheet.getRange(row, GUEST_COLS.checkedIn).getValue();
+    if (!already) {
+      const now = new Date();
+      sheet.getRange(row, GUEST_COLS.checkedIn).setValue(true);
+      sheet.getRange(row, GUEST_COLS.checkInTime).setValue(now);
+      invalidateGuestsCache_();
+      return {
+        ok: true, alreadyCheckedIn: false,
+        checkInTime: Utilities.formatDate(now, "Asia/Manila", "h:mm a"),
+      };
+    }
+    const prev = sheet.getRange(row, GUEST_COLS.checkInTime).getValue();
     return {
-      ok: true, alreadyCheckedIn: false,
-      checkInTime: Utilities.formatDate(now, "Asia/Manila", "h:mm a"),
+      ok: true, alreadyCheckedIn: true,
+      checkInTime: prev ? Utilities.formatDate(new Date(prev), "Asia/Manila", "h:mm a") : "",
     };
+  } finally {
+    lock.releaseLock();
   }
-  const prev = sheet.getRange(row, GUEST_COLS.checkInTime).getValue();
-  return {
-    ok: true, alreadyCheckedIn: true,
-    checkInTime: prev ? Utilities.formatDate(new Date(prev), "Asia/Manila", "h:mm a") : "",
-  };
+}
+
+// Shared checked-in total, read straight from the Sheet so every
+// coordinator's phone shows the same live number (see 8e).
+function countCheckedIn() {
+  const data = getGuestsData_();
+  let n = 0;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i].values[GUEST_COLS.checkedIn - 1]) n++;
+  }
+  return n;
+}
+
+// Returns the whole guest list (name, group, seat, status, email, note) so
+// the coordinator page can show it, do manual check-ins by tapping a name,
+// and render QR scan results instantly from its own local copy of this list.
+function listGuests() {
+  const data = getGuestsData_();
+  return data.map(function (entry) {
+    const r = entry.values;
+    const t = r[GUEST_COLS.checkInTime - 1];
+    return {
+      id:        (r[GUEST_COLS.id - 1] || "").toString().trim(),
+      firstName: r[GUEST_COLS.first - 1],
+      lastName:  r[GUEST_COLS.last - 1],
+      email:     r[GUEST_COLS.email - 1],
+      group:     r[GUEST_COLS.group - 1],
+      seat:      r[GUEST_COLS.seat - 1],
+      note:      r[GUEST_COLS.note - 1],
+      checkedIn: !!r[GUEST_COLS.checkedIn - 1],
+      checkInTime: t ? Utilities.formatDate(new Date(t), "Asia/Manila", "h:mm a") : "",
+    };
+  });
 }
 ```
 
@@ -389,7 +570,7 @@ function emailGuestQRCodes() {
   // that so the run ends cleanly instead of crashing.
   const BATCH_LIMIT = 190;
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(GUESTS_SHEET_NAME);
+  const sheet = getGuestsSheet();
   const last = sheet.getLastRow();
   let sent = 0;
 
@@ -455,8 +636,11 @@ Deploy the site (below), open `checkin.html` on the coordinator's phone (e.g.
 `https://your-site/checkin.html`), enter the PIN, allow camera access, and
 scan away. The **Checked in** counter and every guest's `CheckedIn` /
 `CheckInTime` update live in the Sheet, so you can watch arrivals from a laptop
-too. Because the page is never linked from the guest invitation, only people
-with the URL **and** the PIN can use it.
+too. The counter reads the shared total straight from the Sheet and re-syncs
+every few seconds, so multiple coordinators scanning at once all see the same
+accurate number in real time (and it stays correct if anyone closes and
+reopens the page). Because the page is never linked from the guest invitation,
+only people with the URL **and** the PIN can use it.
 
 ## Deploy
 

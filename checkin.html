@@ -7,6 +7,9 @@
     <title>Guest Check-in &#8212; Jude &amp; Nica</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Warms the connection to the check-in API host so the first scan/lookup isn't slowed by DNS+TLS setup -->
+    <link rel="preconnect" href="https://script.google.com" />
+    <link rel="preconnect" href="https://script.googleusercontent.com" />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
         :root {
@@ -137,6 +140,54 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .foot-note { text-align:center; color: var(--muted); font-size:.75rem; margin-top: 22px; line-height:1.5; }
+
+        /* ---- Toolbar actions ---- */
+        .toolbar-actions { display:flex; align-items:center; gap: 14px; }
+
+        /* ---- Guest list ---- */
+        .list-search {
+            width: 100%; font-family: var(--sans); font-size: 1rem;
+            padding: 12px 14px; border: 1.5px solid var(--line);
+            border-radius: 12px; color: var(--ink); background: #fff;
+            margin-bottom: 12px;
+        }
+        .list-search:focus { outline: none; border-color: var(--royal); }
+
+        .list-filters { display:flex; gap: 8px; margin-bottom: 14px; }
+        .chip {
+            flex: 1; cursor: pointer; font-family: var(--sans);
+            font-weight: 600; font-size: .82rem; padding: 8px 6px;
+            border: 1.5px solid var(--line); border-radius: 999px;
+            background: #fff; color: var(--muted); transition: all .15s;
+        }
+        .chip--active { background: var(--royal); color: #fff; border-color: var(--royal); }
+
+        .guest-list { max-height: 60vh; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+        .guest-item {
+            display:flex; align-items:center; gap: 12px;
+            padding: 12px 4px; border-top: 1px solid var(--line);
+        }
+        .guest-item:first-child { border-top: none; }
+        .guest-item__info { flex: 1; min-width: 0; }
+        .guest-item__name {
+            font-weight: 600; font-size: 1rem; color: var(--ink);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .guest-item__meta { font-size: .8rem; color: var(--muted); margin-top: 1px; }
+        .guest-item__status {
+            flex: 0 0 auto; font-size: .72rem; font-weight: 700;
+            letter-spacing: .03em; text-transform: uppercase;
+            padding: 4px 10px; border-radius: 999px;
+        }
+        .guest-item__status--in { background: var(--green-bg); color: var(--green); }
+        .btn--mini {
+            flex: 0 0 auto; width: auto; padding: 8px 14px;
+            font-size: .82rem; border-radius: 999px;
+            background: var(--green); color: #fff;
+            box-shadow: 0 4px 12px rgba(26,110,72,.28);
+        }
+        .btn--mini:disabled { opacity: .55; }
+        .list-empty { text-align:center; color: var(--muted); font-size:.9rem; padding: 28px 10px; }
     </style>
 </head>
 <body>
@@ -169,10 +220,35 @@
     <section class="card hidden" id="scanCard">
         <div class="scan-toolbar">
             <span class="stat">Checked in: <b id="countLabel">0</b></span>
-            <button type="button" class="link-btn" id="lockBtn">Lock</button>
+            <div class="toolbar-actions">
+                <button type="button" class="link-btn" id="listBtn">Guest list</button>
+                <button type="button" class="link-btn" id="lockBtn">Lock</button>
+            </div>
         </div>
         <div id="reader"></div>
         <p class="scan-hint" id="scanHint">Point the camera at the guest's QR code&hellip;</p>
+    </section>
+
+    <!-- GUEST LIST + MANUAL CHECK-IN -->
+    <section class="card hidden" id="listCard">
+        <div class="scan-toolbar">
+            <span class="stat"><b id="listCountLabel">0</b> / <span id="listTotalLabel">0</span> arrived</span>
+            <button type="button" class="link-btn" id="listCloseBtn">Back to scanner</button>
+        </div>
+        <input
+            type="search"
+            class="list-search"
+            id="listSearch"
+            placeholder="Search by name, group or seat&hellip;"
+            autocomplete="off"
+            aria-label="Search guests"
+        />
+        <div class="list-filters">
+            <button type="button" class="chip chip--active" data-filter="all">All</button>
+            <button type="button" class="chip" data-filter="pending">Not arrived</button>
+            <button type="button" class="chip" data-filter="in">Checked in</button>
+        </div>
+        <div id="guestList" class="guest-list"></div>
     </section>
 
     <!-- GUEST RESULT -->
@@ -192,7 +268,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/config.js"></script>
+<script src="js/config.js?v=20260816"></script>
 <script src="js/checkin.js"></script>
 </body>
 </html>
