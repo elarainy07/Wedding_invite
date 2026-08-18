@@ -663,6 +663,12 @@ body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; 
 .entourage__featured-name { color:var(--muted); font-size:.9rem; padding:3px 0; line-height:1.2; }
 .entourage__two-col   { display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:4px; }
 .entourage__three-col { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:4px; }
+
+/* Parents block: explicit placement so DOM order can differ from visual desktop columns */
+.entourage__col--bride-parents     { grid-column:1; grid-row:1; }
+.entourage__col--bride-step        { grid-column:1; grid-row:2; }
+.entourage__col--groom-parents     { grid-column:2; grid-row:1; }
+.entourage__col--groom-grandfather { grid-column:2; grid-row:2; }
 .entourage__two-col p, .entourage__three-col p { color:var(--muted); font-size:.9rem; padding:3px 0; }
 
 /* Circular photo placeholder above each entourage member's name */
@@ -1064,6 +1070,14 @@ body.modal-open { overflow:hidden; }
     .program__item { grid-template-columns:52px 1fr; gap:14px; }
     .program__dot  { width:52px; height:52px; font-size:1.2rem; }
     .entourage__two-col   { grid-template-columns:1fr; gap:16px; }
+    .entourage__col--groom-parents,
+    .entourage__col--bride-parents,
+    .entourage__col--bride-step,
+    .entourage__col--groom-grandfather { grid-column:1; grid-row:auto; }
+    .entourage__col--groom-parents     { order:1; }
+    .entourage__col--bride-parents     { order:2; }
+    .entourage__col--bride-step        { order:3; }
+    .entourage__col--groom-grandfather { order:4; }
     .entourage__three-col { grid-template-columns:1fr; gap:14px; }
     .venue__grid { grid-template-columns:1fr; }
     .venue__body { padding:26px 22px 30px; }
