@@ -595,7 +595,7 @@ function emailGuestQRCodes() {
           "<p>Your RSVP is confirmed — we can't wait to celebrate with you!</p>" +
           "<p><b>Saturday, January 23, 2027</b><br>" +
           "Ceremony: 3:00 PM — San Antonio de Padua Chapel, Tagaytay City, Cavite<br>" +
-          "Reception: 7:30 PM — Alta D&#39; Tagaytay, Tagaytay City, Cavite</p>" +
+          "Reception: 7:00 PM — Alta D&#39; Tagaytay, Tagaytay City, Cavite</p>" +
           "<p>Please <b>save the attached QR code</b> and show it at the reception " +
           "registration desk so we can check you in quickly.</p>" +
           "<p>With love,<br>Jude &amp; Nica</p>",

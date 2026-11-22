@@ -679,6 +679,33 @@ window.__onCleanup = function (fn) {
     requestAnimationFrame(tick);
 })();
 
+/* ---------------------------------------------------------
+ *  Hero slideshow — cross-fades the front-page photos.
+ *  Each photo is shown for SLIDE_MS before the next fades in.
+ * ------------------------------------------------------- */
+(function () {
+    var SLIDE_MS = 1000;
+
+    var slides = document.querySelectorAll("#heroSlides .hero__photo-img");
+    if (slides.length < 2) return;
+
+    var current = 0;
+    var timer = setInterval(function () {
+        var next = (current + 1) % slides.length;
+        // Wait for the next photo to finish loading rather than fade in a blank.
+        if (!slides[next].complete || !slides[next].naturalWidth) return;
+        for (var i = 0; i < slides.length; i++) slides[i].classList.remove("is-prev");
+        slides[current].classList.remove("is-active");
+        slides[current].classList.add("is-prev");
+        slides[next].classList.add("is-active");
+        current = next;
+    }, SLIDE_MS);
+
+    window.__onCleanup(function () {
+        clearInterval(timer);
+    });
+})();
+
 /* ================================================================
  *  PASSWORD GATE
  * ================================================================ */

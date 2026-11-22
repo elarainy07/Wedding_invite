@@ -126,7 +126,7 @@ img { max-width:100%; display:block; }
 }
 .hero::before {
     content:""; position:absolute; inset:0; z-index:0;
-    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center center / cover no-repeat scroll;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.webp") center center / cover no-repeat scroll;
     opacity:.22; mix-blend-mode:multiply; pointer-events:none;
 }
 .hero__stars {
@@ -159,7 +159,11 @@ img { max-width:100%; display:block; }
     -webkit-mask:url("../img/icon-camera.svg") no-repeat center / contain;
             mask:url("../img/icon-camera.svg") no-repeat center / contain;
 }
-.hero__photo-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.hero__photo-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; }
+/* Slideshow: the incoming photo fades in on top of the previous one, which
+   stays fully opaque underneath so the background never shows through. */
+.hero__photo-img.is-prev   { opacity:1; z-index:1; }
+.hero__photo-img.is-active { opacity:1; z-index:2; transition:opacity .5s ease; }
 .hero__overlay {
     position:absolute; inset:0; z-index:1; pointer-events:none;
     /* Darken the sky/castle and garden-path bands for text contrast, keep the
@@ -240,7 +244,7 @@ img { max-width:100%; display:block; }
 }
 .subpage-hero::before {
     content:""; position:absolute; inset:0; z-index:0;
-    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center / cover no-repeat;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.webp") center / cover no-repeat;
     opacity:.22; mix-blend-mode:multiply; pointer-events:none;
 }
 .subpage-hero__content { position:relative; z-index:2; animation:fadeUp 1.2s ease both; }
@@ -368,7 +372,7 @@ body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; 
     width:100vw;
     margin-left:-50vw;
     /* Scroll attachment (not fixed) avoids the zoom/jump glitch in mobile in-app browsers. */
-    background:url('../Pictures/BG/Dreamy_Garden_watercolor.png') center center / cover no-repeat scroll;
+    background:url('../Pictures/BG/Dreamy_Garden_watercolor.webp') center center / cover no-repeat scroll;
     opacity:.15; mix-blend-mode:multiply;
     z-index:-1;
     pointer-events:none;
@@ -397,7 +401,7 @@ body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; 
 .story__chapter-album::-webkit-scrollbar-thumb { background:var(--rose); border-radius:3px; }
 .story__album-track { display:flex; gap:10px; padding:0; width:max-content; }
 .story__album-photo { flex:0 0 190px; scroll-snap-align:start; border-radius:var(--radius-sm); overflow:hidden; }
-.story__album-photo img { width:190px; height:230px; object-fit:cover; display:block; }
+.story__album-photo img { width:100%; aspect-ratio:2/3; object-fit:cover; display:block; }
 /* Snap the LAST photo to the end (not start) so scrolling all the way through
    lands it flush against the album's right edge instead of the browser
    reserving extra scrollable space to let it snap flush against the left. */
@@ -437,6 +441,12 @@ body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; 
     display:flex; justify-content:center; gap:40px; flex-wrap:wrap; max-width:640px; margin:0 auto;
 }
 .story-teaser__person { flex:1 1 220px; max-width:260px; text-align:center; }
+.story-teaser__photo {
+    display:block; width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:var(--radius-sm);
+    box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+.story-teaser__photo--groom { object-position:50% 10%; }
+.story-teaser__photo--bride { object-position:50% 8%; }
 .story-teaser__name {
     font-family:var(--serif); font-size:1.15rem; font-weight:700; color:var(--royal-dark); margin-top:16px; line-height:1.4;
 }
@@ -514,7 +524,7 @@ body.subpage .nav__toggle span { background:var(--royal-dark); box-shadow:none; 
 .prenup__track { display:flex; gap:20px; padding:10px 0; width:max-content; }
 .prenup__photo { flex:0 0 280px; scroll-snap-align:start; border-radius:var(--radius-sm); overflow:hidden; box-shadow:var(--shadow-card); transition:transform .3s; }
 .prenup__photo:hover { transform:translateY(-6px); }
-.prenup__photo img { width:100%; height:340px; object-fit:cover; display:block; }
+.prenup__photo img { width:100%; aspect-ratio:2/3; object-fit:cover; display:block; }
 
 /* ================================================================
    VENUE  — green bg
@@ -852,7 +862,7 @@ body.modal-open { overflow:hidden; }
 }
 .footer::before {
     content:""; position:absolute; inset:0; z-index:0;
-    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center / cover no-repeat;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.webp") center / cover no-repeat;
     opacity:.5;
 }
 .footer::after {
@@ -1124,7 +1134,6 @@ body.modal-open { overflow:hidden; }
     .venue__body { padding:24px 20px 28px; }
     .btn { padding:12px 22px; font-size:.72rem; letter-spacing:.14em; }
     .prenup__photo { flex:0 0 200px; }
-    .prenup__photo img { height:280px; }
     .story__album-photo { flex:0 0 140px; }
 }
 
@@ -1141,7 +1150,7 @@ body.modal-open { overflow:hidden; }
 .pw-gate--hidden { opacity:0; visibility:hidden; pointer-events:none; }
 .pw-gate::before {
     content:""; position:absolute; inset:0; z-index:0;
-    background:url("../Pictures/BG/Dreamy_Garden_watercolor.png") center / cover no-repeat;
+    background:url("../Pictures/BG/Dreamy_Garden_watercolor.webp") center / cover no-repeat;
     opacity:.22; mix-blend-mode:multiply; pointer-events:none;
 }
 .pw-gate__bg { position:absolute; inset:0; z-index:0; }
